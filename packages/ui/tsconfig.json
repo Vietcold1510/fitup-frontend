@@ -1,0 +1,14 @@
+{
+  // use a relative path here so editors/TS can resolve without needing
+  // the package to be linked during installation. the workspace package
+  // still exists for builds but this keeps the language service happy.
+  "extends": "../../packages/typescript-config/react-library.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {}
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
