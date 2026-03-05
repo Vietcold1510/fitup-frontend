@@ -11,6 +11,7 @@
   min-height: 100svh;
   font-synthesis: none;
   position: relative;
+  overflow-x: hidden;
 }
 
 /* Original home page grid layout - only apply to home page */
@@ -167,12 +168,14 @@ button.secondary {
   align-items: stretch;
   justify-content: flex-start;
   padding: 0;
+  box-sizing: border-box;
   position: fixed;
   top: 0;
   left: 0;
   background: #000;
   z-index: 10;
   height: 100px;
+  overflow: hidden;
 }
 .logoContainer {
   flex-shrink: 0;
@@ -423,10 +426,18 @@ button.secondary {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 28px;
   padding: 12px 32px;
+  box-sizing: border-box;
   border-bottom: 1px solid rgba(255,255,255,0.04);
   width: 100%;
-  flex: 1;
+  height: 56px;
+  min-height: 56px;
+  max-height: 56px;
+  flex: 0 0 56px;
+  flex-wrap: nowrap;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 .topInfo {
@@ -435,12 +446,16 @@ button.secondary {
   color: rgba(255,255,255,0.85);
   font-size: 15px;
   line-height: 1.2;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .topItem {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
 }
 
 .topItem .icon {
@@ -460,11 +475,18 @@ button.secondary {
   display: flex;
   gap: 28px;
   padding: 12px 24px;
+  box-sizing: border-box;
   justify-content: center;
   align-items: center;
   border-bottom: 1px solid rgba(255,255,255,0.03);
   width: 100%;
-  flex: 1;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  flex: 0 0 44px;
+  flex-wrap: nowrap;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 
@@ -473,6 +495,7 @@ button.secondary {
   text-decoration: none;
   font-size: 18px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .navLinkActive {
@@ -480,6 +503,12 @@ button.secondary {
   text-decoration: none;
   font-weight: 700;
   font-size: 18px;
+  white-space: nowrap;
+}
+
+.topBar::-webkit-scrollbar,
+.navBar::-webkit-scrollbar {
+  display: none;
 }
 
 .mainContent {
@@ -632,12 +661,10 @@ button.secondary {
     flex-direction: column;
   }
 
-  /* stack header elements on very narrow viewports */
+  /* keep header metrics/layout stable across zoom and viewport changes */
   .topBar,
   .navBar {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 12px;
+    flex-wrap: nowrap;
   }
 }
 
@@ -699,17 +726,9 @@ button.secondary {
 }
 
 @media (min-width: 1920px) {
-  /* restore larger padding on ultra-wide screens */
+  /* keep header metrics/layout stable across zoom and viewport changes */
   .header {
-    padding: 16px 48px;
-  }
-
-  .topBar {
-    padding: 12px 48px;
-  }
-
-  .navBar {
-    padding: 12px 48px;
+    padding: 0;
   }
 
   .featuresGrid {
