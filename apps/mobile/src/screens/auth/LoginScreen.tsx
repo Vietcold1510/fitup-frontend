@@ -75,10 +75,21 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Chưa có tài khoản? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-              <Text style={styles.link}>Đăng ký ngay</Text>
-            </TouchableOpacity>
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>Chưa có tài khoản? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+                <Text style={styles.link}>Đăng ký ngay</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.footerRow, { marginTop: 15 }]}>
+              <Text style={styles.footerText}>Bạn là huấn luyện viên? </Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("PtRegister")}
+              >
+                <Text style={styles.ptLink}>Đăng ký làm PT</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -103,7 +114,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loginText: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
-  footer: { flexDirection: "row", justifyContent: "center", marginTop: 25 },
-  footerText: { color: "#999" },
-  link: { color: "#FF9500", fontWeight: "bold" },
+  footer: {
+    marginTop: 30,
+    alignItems: "center",
+  },
+  footerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  footerText: {
+    color: "#999",
+    fontSize: 14,
+  },
+  link: {
+    color: "#FF9500",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  ptLink: {
+    color: "#4CD964",
+    fontWeight: "bold",
+    textDecorationLine: "underline",
+    fontSize: 14,
+  },
 });

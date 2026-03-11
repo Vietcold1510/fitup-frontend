@@ -16,6 +16,7 @@ import GeneratingPlanScreen from "@/screens/auth/GeneratingPlanScreen";
 import PlanOverviewScreen from "@/screens/main/workouts/PlanOverviewScreen";
 import PlanDetailScreen from "@/screens/main/workouts/PlanDetailScreen";
 import WorkoutPlayerScreen from "@/screens/main/workouts/WorkoutPlayerScreen";
+import PtRegisterScreen from "@/screens/auth/PtRegisterScreen";
 
 // 1. Khởi tạo Query Client
 const queryClient = new QueryClient({
@@ -50,6 +51,7 @@ export default function App() {
               name="ResetPassword"
               component={ResetPasswordScreen}
             />
+            <Stack.Screen name="PtRegister" component={PtRegisterScreen} />
             {/* Nhóm màn hình chính sau khi Login */}
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen
