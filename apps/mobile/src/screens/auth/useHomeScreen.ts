@@ -1,42 +1,56 @@
 import { useQuery } from "@tanstack/react-query";
-import { http } from "../../lib/http";
-import { Alert } from "react-native";
+import { workoutPlanRequest } from "@/api/workoutPlan";
+import { handleErrorApi } from "@/lib/errors";
 
 export const useHomeScreen = () => {
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["homeData"],
+  const { 
+    data: response, 
+    isLoading, 
+    isError, 
+    refetch,
+    isFetched // Quan trọng: Chỉ true sau khi hàm refetch() chạy xong
+  } = useQuery({
+    queryKey: ["home-workout-plans"],
     queryFn: async () => {
       try {
-        // Tạm thời gọi đường dẫn tới home hoặc dashboard
-        const res = await http.get("/home"); 
-        return res.data.data;
+        const res = await workoutPlanRequest.getPlans();
+        // Cấu trúc: res (Axios) -> .data (Server) -> .data (Array Plans)
+        return res.data.data; 
       } catch (error) {
-        // Nếu API chưa sẵn sàng, trả về null để dùng dữ liệu mẫu bên dưới
-        return null;
+        handleErrorApi({ error });
+        return [];
       }
     },
-    retry: 1,
+    enabled: false, // Ngắt tự động gọi khi mount để Hàn chủ động kiểm soát
   });
 
-  // Dữ liệu mặc định để hiển thị khi API chưa có hoặc đang phát triển
-  const mockData = {
-    user: { name: "Hàn Nguyễn", points: 500, avatar: "" },
-    stats: { workouts: 12, streaks: 5, calories: 850 },
+  const plans = response || [];
+  const hasPlan = plans.length > 0;
+  const latestPlan = hasPlan ? plans[0] : null;
+
+  // Chuẩn bị dữ liệu hiển thị cho UI
+  const homeData = {
+    user: { name: "Hàn", points: 500, avatar: "" },
+    stats: { 
+      workouts: latestPlan?.totalSessions || 0, 
+      streaks: 0, 
+      calories: 0 
+    },
     todayPlan: {
-      title: "Upper Body Strength",
-      duration: "45 min",
-      level: "Intermediate",
-      progress: 3,
-      totalExercises: 8
+      title: latestPlan ? `Lộ trình ${latestPlan.totalWeeks} tuần` : "Chưa có lộ trình",
+      duration: latestPlan ? "45 min" : "0 min",
+      level: latestPlan ? "Cá nhân hóa" : "N/A",
+      progress: latestPlan?.progress || 0,
+      totalExercises: latestPlan?.totalSessions || 0
     }
   };
 
-  const homeData = data || mockData;
-
   return {
     homeData,
+    hasPlan,
     isLoading,
     isError,
+    isFetched, // Trả về để HomeScreen làm chốt chặn điều hướng
     refetch,
   };
 };

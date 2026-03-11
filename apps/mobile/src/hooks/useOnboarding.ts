@@ -3,7 +3,6 @@ import { onboardingRequest } from "../api/onboarding";
 import { OnboardingBodyType } from "../schemas/onboarding";
 import { handleErrorApi } from "../lib/errors";
 import { useNavigation } from "@react-navigation/native";
-import { Alert } from "react-native";
 
 export const useOnboarding = () => {
   const navigation = useNavigation<any>();
@@ -11,12 +10,20 @@ export const useOnboarding = () => {
   const submitOnboardingMutation = useMutation({
     mutationFn: (body: OnboardingBodyType) => onboardingRequest.submit(body),
     onSuccess: (res) => {
-      console.log("Onboarding Profile ID:", res.data.data.onboardingProfileId);
-      Alert.alert("Thành công", "Lộ trình tập luyện của bạn đã được khởi tạo!");
-      // Chuyển vào màn hình Main sau khi onboarding xong
-      navigation.replace("Main");
+      // Bóc tách ID từ cấu trúc: res.data.data.onboardingProfileId
+      const profileId = res.data.data.onboardingProfileId;
+      
+      console.log("-----------------------------------------");
+      console.log("✅ [STEP 1] ONBOARDING SUCCESS");
+      console.log("🆔 Profile ID:", profileId);
+      
+      // Chuyển sang màn hình Loading và truyền ID làm params
+      navigation.replace("GeneratingPlan", { 
+        onboardingProfileId: profileId 
+      });
     },
     onError: (error) => {
+      console.error("❌ [STEP 1] ONBOARDING ERROR:", error);
       handleErrorApi({ error });
     },
   });
