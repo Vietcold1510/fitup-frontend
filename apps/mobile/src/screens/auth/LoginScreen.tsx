@@ -12,7 +12,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthInput } from "../../components/auth/AuthInput";
 import { useLoginScreen } from "./useLoginScreen";
 
-export default function LoginScreen() {
+// 1. Định nghĩa Interface Props để tránh lỗi IntrinsicAttributes
+interface LoginScreenProps {
+  onLoginSuccess: (token: string) => void;
+  navigation: any;
+  route: any;
+}
+
+export default function LoginScreen({
+  onLoginSuccess,
+  navigation,
+}: LoginScreenProps) {
+  // 2. Truyền callback vào Hook
   const {
     formData,
     updateField,
@@ -20,8 +31,7 @@ export default function LoginScreen() {
     setShowPass,
     handleLogin,
     isLoading,
-    navigation,
-  } = useLoginScreen();
+  } = useLoginScreen(onLoginSuccess);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,7 +93,9 @@ export default function LoginScreen() {
             </View>
 
             <View style={[styles.footerRow, { marginTop: 15 }]}>
-              <Text style={styles.footerText}>Bạn là huấn luyện viên? </Text>
+              <Text style={styles.footerText}>
+                Bạn muốn làm huấn luyện viên?{" "}
+              </Text>
               <TouchableOpacity
                 onPress={() => navigation.navigate("PtRegister")}
               >
@@ -114,23 +126,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loginText: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
-  footer: {
-    marginTop: 30,
-    alignItems: "center",
-  },
-  footerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  footerText: {
-    color: "#999",
-    fontSize: 14,
-  },
-  link: {
-    color: "#FF9500",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
+  footer: { marginTop: 30, alignItems: "center" },
+  footerRow: { flexDirection: "row", alignItems: "center" },
+  footerText: { color: "#999", fontSize: 14 },
+  link: { color: "#FF9500", fontWeight: "bold", fontSize: 14 },
   ptLink: {
     color: "#4CD964",
     fontWeight: "bold",

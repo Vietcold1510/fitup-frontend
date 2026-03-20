@@ -99,6 +99,23 @@ export const useAuth = (options?: UseAuthOptions) => {
         },
         onError: (error) => handleErrorApi({ error })
     });
+    // 8. LOGOUT - Giải pháp dứt điểm lỗi Reset Navigator
+const logout = async (onLogoutCallback?: () => void) => {
+    try {
+        await tokenStorage.clearAuth(); 
+        
+        queryClient.clear();
+
+        if (onLogoutCallback) {
+            onLogoutCallback();
+        }
+        
+        console.log("Đã đăng xuất thành công.");
+    } catch (error) {
+        console.error("Lỗi khi đăng xuất:", error);
+        Alert.alert("Lỗi", "Không thể đăng xuất lúc này.");
+    }
+};
 
     return {
         registerMutation,
@@ -107,6 +124,7 @@ export const useAuth = (options?: UseAuthOptions) => {
         loginMutation,
         forgotPasswordMutation,
         resetPasswordMutation,
-        registerPtMutation
+        registerPtMutation,
+        logout
     };
 };
