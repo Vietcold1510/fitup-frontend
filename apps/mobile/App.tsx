@@ -3,76 +3,70 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { jwtDecode } from "jwt-decode";
+import { AuthProvider, useAuthContext } from "./src/context/AuthContext";
 
-// Import màn hình
 import LoginScreen from "./src/screens/auth/LoginScreen";
-import RegisterScreen from "./src/screens/auth/RegisterScreen";
-import VerifyOtpScreen from "@/screens/auth/VerifyOtpScreen";
-import ResetPasswordScreen from "@/screens/auth/ResetPasswordScreen";
-import ForgotPasswordScreen from "@/screens/auth/ForgotPasswordScreen";
 import MainTab from "@/navigations/MainTab";
-import OnboardingScreen from "@/screens/auth/OnboardingScreen";
-import GeneratingPlanScreen from "@/screens/auth/GeneratingPlanScreen";
-import PlanOverviewScreen from "@/screens/main/workouts/PlanOverviewScreen";
-import PlanDetailScreen from "@/screens/main/workouts/PlanDetailScreen";
-import WorkoutPlayerScreen from "@/screens/main/workouts/WorkoutPlayerScreen";
-import PtRegisterScreen from "@/screens/auth/PtRegisterScreen";
+import PtMainTab from "@/navigations/PtMainTab";
+import PtPublicDetail from "@/screens/main/trainer/PtPublicDetail";
+import MyBookingsScreen from "@/screens/main/booking/MyBookingsScreen";
 
-// 1. Khởi tạo Query Client
+const MS_ROLE_KEY =
+  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-    },
-  },
+  defaultOptions: { queries: { retry: false } },
 });
-
 const Stack = createNativeStackNavigator();
+
+function RootNavigation() {
+  const { isAuthenticated, userRole, login } = useAuthContext();
+
+  const onLoginSuccess = (token: string) => {
+    try {
+      const decoded: any = jwtDecode(token);
+      const role = decoded[MS_ROLE_KEY];
+      login(role); // Cập nhật vào Context
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: "fade" }}>
+      {!isAuthenticated ? (
+        <Stack.Screen name="Login">
+          {(props) => (
+            <LoginScreen {...props} onLoginSuccess={onLoginSuccess} />
+          )}
+        </Stack.Screen>
+      ) : (
+        <Stack.Group>
+          {userRole === "PT" ? (
+            <Stack.Screen name="PtMain" component={PtMainTab} />
+          ) : (
+            <>
+              <Stack.Screen name="Main" component={MainTab} />
+              <Stack.Screen name="PtPublicDetail" component={PtPublicDetail} />
+              <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
+            </>
+          )}
+        </Stack.Group>
+      )}
+    </Stack.Navigator>
+  );
+}
 
 export default function App() {
   return (
-    // 2. Bao bọc bằng QueryClientProvider
     <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <Stack.Navigator
-            initialRouteName="Login"
-            screenOptions={{ headerShown: false }}
-          >
-            {/* Nhóm màn hình Auth */}
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-            <Stack.Screen name="VerifyOtp" component={VerifyOtpScreen} />
-            <Stack.Screen
-              name="ForgotPassword"
-              component={ForgotPasswordScreen}
-            />
-            <Stack.Screen
-              name="ResetPassword"
-              component={ResetPasswordScreen}
-            />
-            <Stack.Screen name="PtRegister" component={PtRegisterScreen} />
-            {/* Nhóm màn hình chính sau khi Login */}
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            <Stack.Screen
-              name="GeneratingPlan"
-              component={GeneratingPlanScreen}
-            />
-            <Stack.Screen name="Main" component={MainTab} />
-            <Stack.Screen
-              name="PlanOverview"
-              component={PlanOverviewScreen}
-              options={{ title: "Chi tiết lộ trình", headerShown: false }}
-            />
-            <Stack.Screen name="PlanDetail" component={PlanDetailScreen} />
-            <Stack.Screen
-              name="WorkoutPlayer"
-              component={WorkoutPlayerScreen}
-              options={{ headerShown: false }}
-            />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </SafeAreaProvider>
+      <AuthProvider>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <RootNavigation />
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

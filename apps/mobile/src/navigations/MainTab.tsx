@@ -4,6 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 // Import các màn hình (Hàn có thể tạo file trống cho các màn chưa có)
 import HomeScreen from "@/screens/auth/HomeScreen";
+import ProfileScreen from "@/screens/main/profile/ProfileScreen";
+import UserExploreScreen from "@/screens/main/trainer/UserExploreScreen";
 const Placeholder = () => <HomeScreen />;
 const Tab = createBottomTabNavigator();
 
@@ -40,8 +42,8 @@ export default function MainTab() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Workouts" component={Placeholder} />
       <Tab.Screen name="Nutrition" component={Placeholder} />
-      <Tab.Screen name="Trainers" component={Placeholder} />
-      <Tab.Screen name="Profile" component={Placeholder} />
+      <Tab.Screen name="Trainers" component={UserExploreScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }

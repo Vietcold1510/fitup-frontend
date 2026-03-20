@@ -1,41 +1,49 @@
 import { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
 import { Alert } from 'react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { LoginBodyType } from '../../schemas/auth';
 
-export const useLoginScreen = () => {
-  const navigation = useNavigation<any>();
+// Nhận callback onLoginSuccess từ Screen
+export const useLoginScreen = (onLoginSuccess: (token: string) => void) => {
   const [showPass, setShowPass] = useState(false);
   const [formData, setFormData] = useState<LoginBodyType>({
     email: '',
     password: '',
   });
 
-const { loginMutation } = useAuth({
-  onLoginSuccess: () => {
-    navigation.replace("Main"); 
-  },
-});
-const handleLogin = () => {
-  // 1. Kiểm tra dữ liệu trước (Validation)
-  if (!formData.email || !formData.password) {
-    Alert.alert("Thông báo", "Vui lòng nhập đầy đủ email và mật khẩu");
-    return;
-  }
+  // Sử dụng useAuth mutation
+  const { loginMutation } = useAuth({
+    onLoginSuccess: (res: any) => {
+      // 1. Lấy token từ phản hồi của Backend Hàn (JSON data.accessToken)
+      const token = res?.data?.accessToken || res?.accessToken;
 
-  // 2. Log để debug (Chỉ nên log sau khi đã qua bước check)
-  console.log("Đang gửi yêu cầu đăng nhập cho:", formData.email.trim());
-
-  // 3. Chỉ gọi Mutation DUY NHẤT một lần với dữ liệu đã chuẩn hóa
-  loginMutation.mutate({
-    email: formData.email.trim(),
-    password: formData.password,
+      if (token) {
+        // 2. Gọi callback để App.tsx thực hiện decode Role và chuyển màn hình
+        // CHỈ CẦN DÒNG NÀY, không dùng navigation.replace nữa
+        onLoginSuccess(token);
+        console.log("--- Token sent to App.tsx ---");
+      } else {
+        Alert.alert("Lỗi", "Không tìm thấy mã truy cập từ máy chủ.");
+      }
+    },
   });
-};
+
+  const handleLogin = () => {
+    // Kiểm tra dữ liệu
+    if (!formData.email || !formData.password) {
+      Alert.alert("Thông báo", "Vui lòng nhập đầy đủ email và mật khẩu");
+      return;
+    }
+
+    // Chuẩn hóa email và gửi mutation
+    loginMutation.mutate({
+      email: formData.email.trim().toLowerCase(),
+      password: formData.password,
+    });
+  };
 
   const updateField = (field: keyof LoginBodyType, value: string) => {
-    setFormData((prev: LoginBodyType) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return {
@@ -45,6 +53,5 @@ const handleLogin = () => {
     setShowPass,
     handleLogin,
     isLoading: loginMutation.isPending,
-    navigation,
   };
 };
