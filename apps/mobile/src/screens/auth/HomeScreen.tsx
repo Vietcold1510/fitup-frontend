@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Dimensions,
+  Alert, // <-- Đã thêm Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,14 +18,48 @@ import dayjs from "dayjs";
 import { useWorkout } from "@/hooks/useWorkout";
 import { GoalType } from "@/utils/enum";
 
+// <-- IMPORT CÁC HOOK VÀ API MỚI
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { workoutPlanRequest } from "@/api/workoutPlan";
+
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
+  const queryClient = useQueryClient();
   const { allPlans, todaySession, isLoadingPlans, isLoadingToday } =
     useWorkout();
 
-  // Helper xử lý Style theo GoalType Enum của Hàn
+  // 1. MUTATION: XỬ LÝ XÓA LỘ TRÌNH
+  const deletePlanMutation = useMutation({
+    mutationFn: (id: string) => workoutPlanRequest.deletePlan(id),
+    onSuccess: () => {
+      // Khi xóa thành công, ép làm mới lại danh sách
+      queryClient.invalidateQueries({ queryKey: ["workout-plans"] });
+      // Hoặc queryKey nào mà useWorkout đang dùng để fetch allPlans
+    },
+    onError: (err: any) => {
+      console.error("Lỗi xóa:", err);
+      Alert.alert("Lỗi", "Không thể xóa lộ trình lúc này.");
+    },
+  });
+
+  // 2. HÀM HIỂN THỊ CẢNH BÁO TRƯỚC KHI XÓA
+  const handleConfirmDelete = (id: string) => {
+    Alert.alert(
+      "Xóa Lộ Trình",
+      "Bạn có chắc chắn muốn xóa lộ trình này không? Hành động này sẽ xóa toàn bộ dữ liệu tiến độ.",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive", // Nút đỏ trên iOS
+          onPress: () => deletePlanMutation.mutate(id),
+        },
+      ],
+    );
+  };
+
   const getGoalStyle = (type: GoalType) => {
     switch (type) {
       case GoalType.LoseFat:
@@ -133,22 +168,38 @@ export default function HomeScreen() {
                     navigation.navigate("PlanDetail", { planId: item.id })
                   }
                 >
-                  <View
-                    style={[
-                      styles.badge,
-                      { backgroundColor: goalStyle.color + "20" },
-                    ]}
-                  >
-                    <Ionicons
-                      name={goalStyle.icon as any}
-                      size={12}
-                      color={goalStyle.color}
-                    />
-                    <Text
-                      style={[styles.badgeText, { color: goalStyle.color }]}
+                  {/* CARD HEADER: Chứa Badge và Nút Xóa */}
+                  <View style={styles.cardHeader}>
+                    <View
+                      style={[
+                        styles.badge,
+                        { backgroundColor: goalStyle.color + "20" },
+                      ]}
                     >
-                      {goalStyle.label}
-                    </Text>
+                      <Ionicons
+                        name={goalStyle.icon as any}
+                        size={12}
+                        color={goalStyle.color}
+                      />
+                      <Text
+                        style={[styles.badgeText, { color: goalStyle.color }]}
+                      >
+                        {goalStyle.label}
+                      </Text>
+                    </View>
+
+                    {/* NÚT XÓA */}
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={() => handleConfirmDelete(item.id)}
+                      disabled={deletePlanMutation.isPending}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color="#FF3B30"
+                      />
+                    </TouchableOpacity>
                   </View>
 
                   <View style={styles.statsRow}>
@@ -189,7 +240,6 @@ export default function HomeScreen() {
             }
           />
         </View>
-
         <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
@@ -227,8 +277,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingRight: 20,
   },
-
-  // Today Card
   todayCard: {
     marginHorizontal: 20,
     borderRadius: 24,
@@ -264,8 +312,6 @@ const styles = StyleSheet.create({
     borderColor: "#2C2C2E",
   },
   emptyTodayText: { color: "#666", fontSize: 14 },
-
-  // Plan Card
   planCard: {
     width: 200,
     backgroundColor: "#1C1C1E",
@@ -275,16 +321,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2C2C2E",
   },
+
+  /* ĐÃ THÊM STYLE CHO KHU VỰC HEADER CỦA CARD */
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 14,
+  },
   badge: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 10,
-    marginBottom: 14,
   },
   badgeText: { fontSize: 10, fontWeight: "bold", marginLeft: 4 },
+  deleteBtn: { padding: 4 },
+
   statsRow: {
     flexDirection: "row",
     justifyContent: "space-between",

@@ -29,8 +29,15 @@ function RootNavigation() {
   const onLoginSuccess = (token: string) => {
     try {
       const decoded: any = jwtDecode(token);
-      const role = decoded[MS_ROLE_KEY];
-      login(role); // Cập nhật vào Context
+      const role =
+        decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+
+      // 🔥 LẤY ID TỪ TRƯỜNG "sub"
+      const userId = decoded["sub"];
+
+      // Cập nhật vào Context (Hàn nhớ sửa hàm login trong Context để nhận 2 tham số nhé)
+      login(role, userId);
+      console.log("--- Role & UserId sent to Context ---");
     } catch (e) {
       console.error(e);
     }
@@ -45,7 +52,17 @@ function RootNavigation() {
           )}
         </Stack.Screen>
       ) : (
+        // BÊN TRONG FILE App.tsx
+
         <Stack.Group>
+          {/* 1. ĐƯA MAIN LÊN ĐẦU TIÊN ĐỂ LÀM MẶC ĐỊNH */}
+          {userRole === "PT" ? (
+            <Stack.Screen name="PtMain" component={PtMainTab} />
+          ) : (
+            <Stack.Screen name="Main" component={MainTab} />
+          )}
+
+          {/* 2. CÁC MÀN HÌNH KHÁC ĐỂ XUỐNG DƯỚI */}
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           <Stack.Screen name="PlanDetail" component={PlanDetailScreen} />
           <Stack.Screen
@@ -54,11 +71,9 @@ function RootNavigation() {
           />
           <Stack.Screen name="WorkoutPlayer" component={WorkoutPlayerScreen} />
 
-          {userRole === "PT" ? (
-            <Stack.Screen name="PtMain" component={PtMainTab} />
-          ) : (
+          {/* 3. CÁC MÀN HÌNH PHỤ CỦA USER */}
+          {userRole !== "PT" && (
             <>
-              <Stack.Screen name="Main" component={MainTab} />
               <Stack.Screen name="PtPublicDetail" component={PtPublicDetail} />
               <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
             </>

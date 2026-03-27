@@ -1,9 +1,11 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState } from "react";
 
+// 1. Mở rộng kiểu dữ liệu cho role thành string để khớp với JWT
 interface AuthContextType {
   isAuthenticated: boolean;
-  userRole: "PT" | "User" | null;
-  login: (role: "PT" | "User") => void;
+  userRole: string | null;
+  userId: string | null;
+  login: (role: string, userId: string) => void; // Nhận 2 tham số string
   logout: () => void;
 }
 
@@ -13,20 +15,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<"PT" | "User" | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const login = useCallback((role: "PT" | "User") => {
-    setUserRole(role);
+  // 2. Tên tham số phải khớp với tên biến bên trong hàm
+  const login = (role: string, id: string) => {
     setIsAuthenticated(true);
-  }, []);
+    setUserRole(role);
+    setUserId(id);
+  };
 
-  const logout = useCallback(() => {
-    setUserRole(null);
+  const logout = () => {
     setIsAuthenticated(false);
-  }, []);
+    setUserRole(null);
+    setUserId(null);
+  };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userRole, login, logout }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, userRole, userId, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -35,6 +43,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 export const useAuthContext = () => {
   const context = useContext(AuthContext);
   if (!context)
-    throw new Error("useAuthContext must be used within AuthProvider");
+    throw new Error("useAuthContext must be used within an AuthProvider");
   return context;
 };

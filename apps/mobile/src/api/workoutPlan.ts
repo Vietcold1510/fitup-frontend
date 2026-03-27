@@ -20,13 +20,16 @@ export const workoutPlanRequest = {
     http.get(`/api/workout-plans/${id}/weeks/${week}/days/${day}`),
     
 // 6. Sinh lộ trình
-  generatePlan: (onboardingProfileId: string) => 
-    http.post(`/api/workout-plans/generate?onboardingProfileId=${onboardingProfileId}`),
+generatePlan: (profileId: string) => 
+  http.post(`/api/workout-plans/generate?onboardingProfileId=${profileId}`),
 
   completeSession: (id: string) => http.post(`/api/workout-sessions/${id}/complete`),
 
 // 7. Cập nhật trạng thái
   updateExerciseStatus: (exerciseId: string) => 
     http.patch(`/api/workout-plans/exercises/${exerciseId}/status`, { "isDone": true }),
+
+  // 8. Xóa lộ trình
+  deletePlan: (id: string) => http.delete(`/api/workout-plans/${id}`),
 };
 
