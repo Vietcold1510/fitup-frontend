@@ -2,24 +2,31 @@ import { http } from "@/lib/http";
 import { WorkoutPlanListResponse } from "@/schemas/workoutPlan";
 
 export const workoutPlanRequest = {
-  // Lấy danh sách plan
+  // 1. Lấy danh sách plan
   getPlans: () => http.get<WorkoutPlanListResponse>("/api/workout-plans"),
 
-  // Chi tiết 1 plan (Overview)
+  // 2. Chi tiết 1 plan tổng quan (Thêm overview theo Swagger)
+  getPlanOverview: (id: string) => http.get(`/api/workout-plans/${id}/overview`),
+
+  // 3. Chi tiết 1 plan đầy đủ
   getPlanDetail: (id: string) => http.get(`/api/workout-plans/${id}`),
 
-  // Lấy bài tập hôm nay (Hàn hãy check lại endpoint thực tế của Backend)
-  getTodaySession: () => http.get("/api/workout-plans/today"),
+  // 4. Lấy chi tiết 1 tuần (Theo Swagger)
+  getWeekDetail: (id: string, week: number) => 
+    http.get(`/api/workout-plans/${id}/weeks/${week}`),
 
-  // Lấy chi tiết các động tác trong 1 ngày cụ thể
-  getSessionExercises: (id: string) => http.get(`/api/workout-sessions/${id}/exercises`),
-
-  // Các hàm cũ của Hàn giữ lại nếu cần
+  // 5. Lấy chi tiết các động tác trong 1 ngày (ĐÂY LÀ NGUỒN DATA CHO PLAYER)
   getDayDetail: (id: string, week: number, day: number) => 
     http.get(`/api/workout-plans/${id}/weeks/${week}/days/${day}`),
     
+// 6. Sinh lộ trình
   generatePlan: (onboardingProfileId: string) => 
     http.post(`/api/workout-plans/generate?onboardingProfileId=${onboardingProfileId}`),
 
   completeSession: (id: string) => http.post(`/api/workout-sessions/${id}/complete`),
+
+// 7. Cập nhật trạng thái
+  updateExerciseStatus: (exerciseId: string) => 
+    http.patch(`/api/workout-plans/exercises/${exerciseId}/status`, { "isDone": true }),
 };
+

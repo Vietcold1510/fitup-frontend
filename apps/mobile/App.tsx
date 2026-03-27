@@ -11,6 +11,10 @@ import MainTab from "@/navigations/MainTab";
 import PtMainTab from "@/navigations/PtMainTab";
 import PtPublicDetail from "@/screens/main/trainer/PtPublicDetail";
 import MyBookingsScreen from "@/screens/main/booking/MyBookingsScreen";
+import OnboardingScreen from "@/screens/auth/OnboardingScreen";
+import PlanDetailScreen from "@/screens/main/workouts/PlanDetailScreen";
+import GeneratingPlanScreen from "@/screens/auth/GeneratingPlanScreen";
+import WorkoutPlayerScreen from "@/screens/main/workouts/WorkoutPlayerScreen";
 
 const MS_ROLE_KEY =
   "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
@@ -42,6 +46,14 @@ function RootNavigation() {
         </Stack.Screen>
       ) : (
         <Stack.Group>
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          <Stack.Screen name="PlanDetail" component={PlanDetailScreen} />
+          <Stack.Screen
+            name="GeneratingPlan"
+            component={GeneratingPlanScreen}
+          />
+          <Stack.Screen name="WorkoutPlayer" component={WorkoutPlayerScreen} />
+
           {userRole === "PT" ? (
             <Stack.Screen name="PtMain" component={PtMainTab} />
           ) : (
