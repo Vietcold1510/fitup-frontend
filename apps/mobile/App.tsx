@@ -15,6 +15,15 @@ import OnboardingScreen from "@/screens/auth/OnboardingScreen";
 import PlanDetailScreen from "@/screens/main/workouts/PlanDetailScreen";
 import GeneratingPlanScreen from "@/screens/auth/GeneratingPlanScreen";
 import WorkoutPlayerScreen from "@/screens/main/workouts/WorkoutPlayerScreen";
+import PtRegisterScreen from "@/screens/auth/PtRegisterScreen";
+import RegisterScreen from "@/screens/auth/RegisterScreen";
+import VerifyOtpScreen from "@/screens/auth/VerifyOtpScreen";
+import ResetPasswordScreen from "@/screens/auth/ResetPasswordScreen";
+import ForgotPasswordScreen from "@/screens/auth/ForgotPasswordScreen";
+import PtScheduleScreen from "@/screens/main/pt/PtScheduleScreen";
+import PtSetAvailabilityScreen from "@/screens/main/pt/PtSetAvailabilityScreen";
+import PtBookingRequestsScreen from "@/screens/main/pt/PtBookingRequestsScreen";
+import PtBookingDetailScreen from "@/screens/main/pt/PtBookingDetailScreen";
 
 const MS_ROLE_KEY =
   "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
@@ -46,18 +55,43 @@ function RootNavigation() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: "fade" }}>
       {!isAuthenticated ? (
-        <Stack.Screen name="Login">
-          {(props) => (
-            <LoginScreen {...props} onLoginSuccess={onLoginSuccess} />
-          )}
-        </Stack.Screen>
+        //  NHÓM MÀN HÌNH KHI CHƯA ĐĂNG NHẬP
+        <>
+          <Stack.Screen name="Login">
+            {(props) => (
+              <LoginScreen {...props} onLoginSuccess={onLoginSuccess} />
+            )}
+          </Stack.Screen>
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="VerifyOtp" component={VerifyOtpScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen
+            name="ForgotPassword"
+            component={ForgotPasswordScreen}
+          />
+        </>
       ) : (
         // BÊN TRONG FILE App.tsx
 
         <Stack.Group>
           {/* 1. ĐƯA MAIN LÊN ĐẦU TIÊN ĐỂ LÀM MẶC ĐỊNH */}
           {userRole === "PT" ? (
-            <Stack.Screen name="PtMain" component={PtMainTab} />
+            <>
+              <Stack.Screen name="PtMain" component={PtMainTab} />
+              <Stack.Screen name="PtSchedule" component={PtScheduleScreen} />
+              <Stack.Screen
+                name="PtSetAvailability"
+                component={PtSetAvailabilityScreen}
+              />
+              <Stack.Screen
+                name="PtBookingRequests"
+                component={PtBookingRequestsScreen}
+              />
+              <Stack.Screen
+                name="PtBookingDetail"
+                component={PtBookingDetailScreen}
+              />
+            </>
           ) : (
             <Stack.Screen name="Main" component={MainTab} />
           )}
@@ -76,6 +110,7 @@ function RootNavigation() {
             <>
               <Stack.Screen name="PtPublicDetail" component={PtPublicDetail} />
               <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
+              <Stack.Screen name="PtRegister" component={PtRegisterScreen} />
             </>
           )}
         </Stack.Group>
