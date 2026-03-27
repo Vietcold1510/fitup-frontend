@@ -12,7 +12,7 @@ export const ptSlotRequest = {
   updateSlotTemplate: (id: string, body: any) => http.put(`/api/pt/slots/${id}`, body),
 
   // Xóa lịch mẫu (Sẽ mất các slot tương ứng trong tương lai)
-  deleteSlotTemplate: (id: string) => http.delete(`/api/pt/slots/${id}`),
+deleteSlotTemplate: (id: string) => http.delete(`/api/pt/slots/${id}`),
 
   // LẤY LỊCH THỰC TẾ TRÊN CALENDAR (Để hiển thị dấu chấm trên bộ lịch)
   getCalendarSlots: (startDate: string) => 

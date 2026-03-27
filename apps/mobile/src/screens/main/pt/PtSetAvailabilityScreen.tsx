@@ -64,6 +64,34 @@ export default function PtSetAvailabilityScreen({ navigation }: any) {
     },
   });
 
+  // 4. Mutation Xóa lịch mẫu
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => ptSlotRequest.deleteSlotTemplate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ptTemplates"] });
+      // Nếu xóa đúng cái đang sửa thì reset form
+      resetForm();
+      Alert.alert("Thành công", "Đã xóa lịch mẫu này.");
+    },
+    onError: () => Alert.alert("Lỗi", "Không thể xóa lịch mẫu lúc này."),
+  });
+
+  // Hàm xác nhận trước khi xóa (UX tốt hơn)
+  const confirmDelete = (id: string) => {
+    Alert.alert(
+      "Xác nhận xóa",
+      "Bạn có chắc chắn muốn xóa lịch định kỳ này không? Hành động này không thể hoàn tác.",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: () => deleteMutation.mutate(id),
+        },
+      ],
+    );
+  };
+
   const resetForm = () => {
     setEditingId(null);
     setForm({
@@ -204,13 +232,28 @@ export default function PtSetAvailabilityScreen({ navigation }: any) {
                 </Text>
               </View>
               <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 15 }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 20 }}
               >
                 <Text style={styles.tempPrice}>
                   {item.price.toLocaleString()}đ
                 </Text>
+
+                {/* NÚT SỬA */}
                 <TouchableOpacity onPress={() => handleEditPress(item)}>
                   <Ionicons name="create-outline" size={22} color="#FF9500" />
+                </TouchableOpacity>
+
+                {/* NÚT XÓA - MỚI THÊM */}
+                <TouchableOpacity
+                  onPress={() => confirmDelete(item.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending &&
+                  deleteMutation.variables === item.id ? (
+                    <ActivityIndicator size="small" color="#FF3B30" />
+                  ) : (
+                    <Ionicons name="trash-outline" size={22} color="#FF3B30" />
+                  )}
                 </TouchableOpacity>
               </View>
             </View>

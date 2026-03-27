@@ -128,7 +128,7 @@ export default function UserExploreScreen({ navigation }: any) {
           {/* NÚT ĐIỀU HƯỚNG TỚI LỊCH TẬP (MY BOOKINGS) */}
           <TouchableOpacity
             style={styles.myBookingBtn}
-            onPress={() => navigation.navigate("MyBookingsScreen")}
+            onPress={() => navigation.navigate("MyBookings")}
           >
             <View style={styles.iconContainer}>
               <Ionicons name="calendar-outline" size={26} color="#FF9500" />

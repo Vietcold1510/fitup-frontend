@@ -91,17 +91,6 @@ export default function LoginScreen({
                 <Text style={styles.link}>Đăng ký ngay</Text>
               </TouchableOpacity>
             </View>
-
-            <View style={[styles.footerRow, { marginTop: 15 }]}>
-              <Text style={styles.footerText}>
-                Bạn muốn làm huấn luyện viên?{" "}
-              </Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate("PtRegister")}
-              >
-                <Text style={styles.ptLink}>Đăng ký làm PT</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </KeyboardAvoidingView>

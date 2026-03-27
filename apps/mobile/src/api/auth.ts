@@ -26,8 +26,7 @@ export const authRequest = {
     // Đặt lại mật khẩu mới
     resetPassword: (body: ResetPasswordBodyType) => http.post("/auth/reset-password", body),
 
-    registerPt: (body: any) => http.post("/pt/register", body),
-
+registerPt: (body: any) => http.post("/api/pt/register", body),
     // Lấy thông tin profile hiện tại để kiểm tra Role và Status
     getProfile: () => http.get("/auth/profile"),
 };

@@ -88,7 +88,12 @@ export default function PlanDetailScreen() {
                       key={day.dayNumber}
                       style={styles.dayItem}
                       onPress={() =>
-                        navigation.navigate("WorkoutPlayer", { dayData: day })
+                        navigation.navigate("WorkoutPlayer", {
+                          planId: currentPlan.id, // Truyền ID của toàn bộ lộ trình
+                          weekNumber: week.weekNumber, // Truyền số thứ tự Tuần
+                          dayNumber: day.dayNumber, // Truyền số thứ tự Ngày
+                          fallbackData: day, // Truyền hờ data cũ phòng khi mạng lag
+                        })
                       }
                     >
                       <View style={styles.dayInfo}>

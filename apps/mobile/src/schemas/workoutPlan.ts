@@ -4,12 +4,14 @@ import { GoalType } from "../utils/enum";
 
 // 1. Chi tiết từng bài tập trong một buổi
 export const PlanExerciseSchema = z.object({
+  id: z.string().optional(),      
   order: z.number(),
   sets: z.number().nullable(),
   reps: z.string().nullable(),
   durationSeconds: z.number().nullable(),
   restSeconds: z.number().nullable(),
   note: z.string().nullable(),
+  isDone: z.boolean().optional(),  
   workout: WorkoutSchema
 });
 

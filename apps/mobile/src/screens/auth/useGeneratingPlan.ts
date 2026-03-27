@@ -43,7 +43,7 @@ export const useGeneratingPlan = () => {
     const messages = [
       "Đang phân tích chỉ số cơ thể...",
       "Đang thiết lập cường độ tập luyện...",
-      "Đang tối ưu lộ trình 4 tuần...",
+      "Đang tối ưu lộ trình các tuần...",
       "Hoàn tất! Đang chuẩn bị vào trang chủ..."
     ];
 
