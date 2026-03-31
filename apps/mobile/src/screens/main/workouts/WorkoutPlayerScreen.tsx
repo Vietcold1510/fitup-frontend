@@ -24,11 +24,10 @@ export default function WorkoutPlayerScreen() {
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
 
-  // 1. Nhận "Tọa độ" từ màn hình trước
+  // 1. LẤY PARAMS TỪ NAVIGATION
   const { planId, weekNumber, dayNumber, fallbackData } = route.params || {};
 
-  // 2. TỰ ĐỘNG GỌI API LẤY CHI TIẾT NGÀY TẬP (CÓ CHỨA ID VÀ ISDONE)
-  // 1. DÙNG USEQUERY ĐỂ GỌI DATA XỊN
+  // 2. FETCH DỮ LIỆU CHI TIẾT BUỔI TẬP
   const { data: dayDetailRes, isLoading } = useQuery({
     queryKey: ["day-detail", planId, weekNumber, dayNumber],
     queryFn: () =>
@@ -36,16 +35,12 @@ export default function WorkoutPlayerScreen() {
     enabled: !!planId && !!weekNumber && !!dayNumber,
   });
 
-  // 2. KHÚC NÀY QUAN TRỌNG NHẤT: CHẤM 2 LẦN DATA !!!
   const exercises = useMemo(() => {
-    // Axios bọc 1 lớp data, Backend của bạn bọc thêm 1 lớp data nữa -> Phải là .data.data
     const freshExercises = dayDetailRes?.data?.data?.exercises;
-
-    // Nếu có data mới thì xài, không thì xài data cũ từ màn hình trước
     return freshExercises || fallbackData?.exercises || [];
   }, [dayDetailRes, fallbackData]);
 
-  // 2. STATE QUẢN LÝ LUỒNG TẬP
+  // 3. STATE QUẢN LÝ TẬP LUYỆN
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isActive, setIsActive] = useState(false);
@@ -54,26 +49,27 @@ export default function WorkoutPlayerScreen() {
   const currentEx = exercises[currentIndex];
   const isTimerEx = !!currentEx?.durationSeconds;
 
-  // 3. MUTATION: Cập nhật trạng thái từng bài tập lẻ
+  // 4. MUTATION CẬP NHẬT TRẠNG THÁI (DONE/SKIP)
   const updateStatusMutation = useMutation({
-    mutationFn: (exerciseId: string) => {
-      console.log(`📡 [GỬI LÊN SERVER] PATCH ID Bài Tập: ${exerciseId}`);
-      return workoutPlanRequest.updateExerciseStatus(exerciseId);
+    mutationFn: ({
+      exerciseId,
+      isDone,
+    }: {
+      exerciseId: string;
+      isDone: boolean;
+    }) => {
+      return workoutPlanRequest.updateExerciseStatus(exerciseId, { isDone });
     },
     onSuccess: () => {
-      console.log(
-        `✅ [SERVER TRẢ VỀ] Đã đánh dấu Xong cho bài: ${currentEx?.workout?.name}`,
-      );
-      // Ép App tải lại dữ liệu Plan để màn hình ngoài cập nhật %
+      // Refresh lại dữ liệu ngày để cập nhật trạng thái isDone lên UI
+      queryClient.invalidateQueries({
+        queryKey: ["day-detail", planId, weekNumber, dayNumber],
+      });
       queryClient.invalidateQueries({ queryKey: ["workout-plan"] });
-    },
-    onError: (err: any) => {
-      console.error("❌ [LỖI PATCH] Status:", err.response?.status);
-      console.error("❌ [LỖI PATCH] Data:", err.response?.data);
     },
   });
 
-  // 4. EFFECT: Reset đồng hồ và hiệp khi đổi bài
+  // 5. RESET KHI ĐỔI BÀI
   useEffect(() => {
     if (!currentEx) return;
     if (isTimerEx) {
@@ -85,49 +81,39 @@ export default function WorkoutPlayerScreen() {
     setIsActive(false);
   }, [currentIndex, currentEx]);
 
-  // 5. EFFECT: Xử lý đếm ngược (Timer)
+  // 6. LOGIC ĐẾM NGƯỢC
   useEffect(() => {
     let interval: any = null;
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     } else if (timeLeft === 0 && isTimerEx && isActive) {
-      handleNext(); // Hết giờ tự động qua bài
+      handleNext(true); // Hết giờ tự động coi là Hoàn thành
     }
     return () => clearInterval(interval);
   }, [isActive, timeLeft]);
 
-  // 6. HÀM XỬ LÝ CHUYỂN BÀI - CHUẨN XÁC VÀ BẤT ĐỒNG BỘ
-  const handleNext = async () => {
+  // 7. XỬ LÝ CHUYỂN BÀI
+  const handleNext = async (isFinished: boolean) => {
     setIsActive(false);
-
-    // BƯỚC A: Lấy ID chuẩn xác nằm ở ngoài cùng
     const currentExerciseId = currentEx?.id;
 
-    if (currentExerciseId) {
+    if (currentExerciseId && !currentEx.isDone) {
       try {
-        // Đợi Server lưu xong bài tập lẻ này mới cho chạy tiếp
-        await updateStatusMutation.mutateAsync(currentExerciseId);
+        await updateStatusMutation.mutateAsync({
+          exerciseId: currentExerciseId,
+          isDone: isFinished,
+        });
       } catch (e) {
-        console.log(
-          "⚠️ Bỏ qua cập nhật do lỗi mạng, nhưng vẫn cho phép đi tiếp.",
-        );
+        console.log("⚠️ Không thể cập nhật trạng thái, chuyển bài tiếp.");
       }
-    } else {
-      console.log("🔴 BỎ QUA PATCH: Không tìm thấy ID bài tập hợp lệ.");
     }
 
-    // BƯỚC B: Chuyển bài hoặc Kết thúc
     if (currentIndex < exercises.length - 1) {
-      // Nhảy sang bài tiếp theo
       setCurrentIndex(currentIndex + 1);
     } else {
-      // Không cần gọi completeSession nữa vì Backend không có API này
-      console.log("🏁 Hoàn thành buổi tập.");
-      Alert.alert(
-        "Tuyệt vời!",
-        "Bạn đã hoàn thành xuất sắc buổi tập hôm nay! 🔥",
-        [{ text: "Về trang chủ", onPress: () => navigation.replace("Main") }],
-      );
+      Alert.alert("Tuyệt vời!", "Bạn đã hoàn thành buổi tập hôm nay! 🔥", [
+        { text: "Về lộ trình", onPress: () => navigation.goBack() },
+      ]);
     }
   };
 
@@ -135,20 +121,17 @@ export default function WorkoutPlayerScreen() {
     if (currentSet < (currentEx?.sets || 1)) {
       setCurrentSet(currentSet + 1);
     } else {
-      handleNext();
+      handleNext(true);
     }
   };
 
-  const isPending = updateStatusMutation.isPending;
-
-  if (!currentEx)
+  if (isLoading || !currentEx) {
     return (
-      <ActivityIndicator
-        style={[styles.container, { justifyContent: "center" }]}
-        color="#FF9500"
-        size="large"
-      />
+      <View style={styles.loading}>
+        <ActivityIndicator color="#FF9500" size="large" />
+      </View>
     );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -156,25 +139,29 @@ export default function WorkoutPlayerScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          disabled={isPending}
+          disabled={updateStatusMutation.isPending}
         >
           <Ionicons name="close" size={28} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           BÀI {currentIndex + 1} / {exercises.length}
         </Text>
-        <View style={{ width: 28 }} />
+        <TouchableOpacity>
+          <Ionicons name="help-circle-outline" size={24} color="#555" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* MEDIA BOX */}
+        {/* MEDIA SECTION */}
         <View style={styles.mediaBox}>
           <Image
             source={{
-              uri: "https://via.placeholder.com/400x300/1C1C1E/FF9500?text=FITUP",
+              uri:
+                currentEx.workout?.thumbnail ||
+                "https://via.placeholder.com/400x300/1C1C1E/FF9500?text=FitUp+Exercise",
             }}
             style={styles.image}
           />
@@ -184,7 +171,7 @@ export default function WorkoutPlayerScreen() {
           />
         </View>
 
-        {/* THÔNG TIN BÀI TẬP */}
+        {/* INFO SECTION */}
         <View style={styles.infoBox}>
           <Text style={styles.exName}>{currentEx.workout?.name}</Text>
           <Text style={styles.exDesc}>{currentEx.workout?.describe}</Text>
@@ -195,25 +182,40 @@ export default function WorkoutPlayerScreen() {
           )}
         </View>
 
-        {/* KHU VỰC ĐIỀU KHIỂN (TIMER HOẶC SETS) */}
+        {/* CONTROL CENTER */}
         <View style={styles.controlCenter}>
-          {isTimerEx ? (
+          {currentEx.isDone ? (
+            // VIEW KHI ĐÃ XONG (DẤU V TÍCH)
+            <View style={styles.completedWrapper}>
+              <View style={styles.successCircle}>
+                <Ionicons name="checkmark-sharp" size={60} color="#4CD964" />
+              </View>
+              <Text style={styles.completedTitle}>HOÀN THÀNH</Text>
+              <TouchableOpacity
+                style={styles.nextBtn}
+                onPress={() => handleNext(true)}
+              >
+                <Text style={styles.nextBtnText}>TIẾP TỤC</Text>
+                <Ionicons name="arrow-forward" size={18} color="#FF9500" />
+              </TouchableOpacity>
+            </View>
+          ) : isTimerEx ? (
+            // VIEW ĐẾM NGƯỢC
             <View style={styles.timerWrapper}>
               <Text style={styles.bigNumber}>{timeLeft}s</Text>
               <TouchableOpacity
                 style={styles.playBtn}
                 onPress={() => setIsActive(!isActive)}
-                disabled={isPending}
               >
                 <Ionicons
                   name={isActive ? "pause" : "play"}
                   size={44}
                   color="#000"
-                  style={!isActive && { marginLeft: 5 }}
                 />
               </TouchableOpacity>
             </View>
           ) : (
+            // VIEW THEO HIỆP
             <View style={styles.setsWrapper}>
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
@@ -228,11 +230,14 @@ export default function WorkoutPlayerScreen() {
                 </View>
               </View>
               <TouchableOpacity
-                style={[styles.doneBtn, isPending && { opacity: 0.6 }]}
+                style={[
+                  styles.doneBtn,
+                  updateStatusMutation.isPending && { opacity: 0.6 },
+                ]}
                 onPress={handleSetComplete}
-                disabled={isPending}
+                disabled={updateStatusMutation.isPending}
               >
-                {isPending ? (
+                {updateStatusMutation.isPending ? (
                   <ActivityIndicator color="#000" />
                 ) : (
                   <Text style={styles.doneBtnText}>XONG HIỆP {currentSet}</Text>
@@ -244,42 +249,62 @@ export default function WorkoutPlayerScreen() {
       </ScrollView>
 
       {/* FOOTER */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.skipBtn, isPending && { opacity: 0.5 }]}
-          onPress={handleNext}
-          disabled={isPending}
-        >
-          <Text style={styles.skipText}>
-            {currentIndex === exercises.length - 1 ? "HOÀN THÀNH" : "BỎ QUA"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {!currentEx.isDone && (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[
+              styles.skipBtn,
+              updateStatusMutation.isPending && { opacity: 0.5 },
+            ]}
+            onPress={() => handleNext(currentIndex === exercises.length - 1)}
+            disabled={updateStatusMutation.isPending}
+          >
+            <Text style={styles.skipText}>
+              {currentIndex === exercises.length - 1
+                ? "HOÀN THÀNH BUỔI TẬP"
+                : "BỎ QUA BÀI NÀY"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
-// STYLES
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#121212" },
+  loading: { flex: 1, justifyContent: "center", backgroundColor: "#121212" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     padding: 20,
     alignItems: "center",
   },
-  headerTitle: { color: "#888", fontWeight: "bold", letterSpacing: 1 },
-  mediaBox: { width: width, height: 280, backgroundColor: "#1C1C1E" },
-  image: { width: "100%", height: "100%", resizeMode: "contain" },
+  headerTitle: {
+    color: "#888",
+    fontWeight: "bold",
+    letterSpacing: 1,
+    fontSize: 12,
+  },
+
+  mediaBox: { width: width, height: 260, backgroundColor: "#1C1C1E" },
+  image: { width: "100%", height: "100%", resizeMode: "cover" },
   fade: { position: "absolute", bottom: 0, left: 0, right: 0, height: 60 },
-  infoBox: { paddingHorizontal: 30, alignItems: "center", marginTop: 15 },
+
+  infoBox: { paddingHorizontal: 30, alignItems: "center", marginTop: 10 },
   exName: {
     color: "#FFF",
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "bold",
     textAlign: "center",
   },
-  exDesc: { color: "#888", textAlign: "center", marginTop: 8, fontSize: 15 },
+  exDesc: {
+    color: "#888",
+    textAlign: "center",
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 20,
+  },
   badgeNote: {
     backgroundColor: "#261C12",
     paddingHorizontal: 12,
@@ -288,16 +313,50 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   noteText: { color: "#FF9500", fontWeight: "600", fontSize: 12 },
+
   controlCenter: {
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 40,
-    marginTop: 20,
+    paddingVertical: 20,
   },
+
+  // Styles cho trạng thái hoàn thành
+  completedWrapper: { alignItems: "center" },
+  successCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#4CD96410",
+    borderWidth: 2,
+    borderColor: "#4CD964",
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  completedTitle: {
+    color: "#4CD964",
+    fontSize: 22,
+    fontWeight: "900",
+    letterSpacing: 2,
+  },
+  nextBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 25,
+    backgroundColor: "#1C1C1E",
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 15,
+  },
+  nextBtnText: { color: "#FF9500", fontWeight: "bold", marginRight: 10 },
+
+  // Styles cho Timer
   timerWrapper: { alignItems: "center" },
   bigNumber: {
     color: "#FFF",
-    fontSize: 80,
+    fontSize: 85,
     fontWeight: "900",
     fontVariant: ["tabular-nums"],
   },
@@ -308,8 +367,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF9500",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 15,
   },
+
+  // Styles cho Sets
   setsWrapper: { alignItems: "center" },
   statsRow: {
     flexDirection: "row",
@@ -318,34 +379,25 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   statItem: { alignItems: "center" },
-  statLabel: {
-    color: "#555",
-    fontWeight: "bold",
-    fontSize: 12,
-    letterSpacing: 1,
-  },
-  statValue: {
-    color: "#FF9500",
-    fontSize: 40,
-    fontWeight: "900",
-    marginTop: 5,
-  },
+  statLabel: { color: "#555", fontWeight: "bold", fontSize: 12 },
+  statValue: { color: "#FF9500", fontSize: 44, fontWeight: "900" },
   doneBtn: {
     backgroundColor: "#FFF",
     width: "100%",
-    height: 60,
-    borderRadius: 18,
+    height: 55,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
   },
   doneBtnText: { color: "#121212", fontWeight: "bold", fontSize: 16 },
-  footer: { padding: 30, alignItems: "center" },
+
+  footer: { paddingBottom: 30, alignItems: "center" },
   skipBtn: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 30,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#2C2C2E",
   },
-  skipText: { color: "#888", fontWeight: "bold", fontSize: 14 },
+  skipText: { color: "#555", fontWeight: "bold", fontSize: 13 },
 });

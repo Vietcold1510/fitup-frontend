@@ -7,7 +7,6 @@ export const useGeneratingPlan = () => {
   const route = useRoute<RouteProp<RootStackParamList, 'GeneratingPlan'>>();
   const navigation = useNavigation<any>();
   
-  // Lấy ID: 365920d39eb5455b815401562e0d0009 từ params
   const { onboardingProfileId } = route.params;
 
   const [progress, setProgress] = useState(0);

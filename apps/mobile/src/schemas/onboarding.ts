@@ -9,7 +9,7 @@ export const OnboardingBodySchema = z.object({
   minutesPerSession: z.number().min(1, "Vui lòng chọn thời gian mỗi buổi"),
   equipment: z.nativeEnum(EquipmentType),
   focusAreas: z.string().min(1, "Vui lòng nhập vùng cơ muốn tập trung"),
-  limitations: z.string().optional(),
+  limitations: z.string().default("None"),
 });
 
 export type OnboardingBodyType = z.infer<typeof OnboardingBodySchema>;
