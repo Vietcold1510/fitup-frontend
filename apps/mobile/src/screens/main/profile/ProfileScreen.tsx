@@ -96,14 +96,6 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.menuItem, { marginTop: 40 }]}
-          onPress={logout}
-        >
-          <Ionicons name="log-out-outline" size={22} color="#FF3B30" />
-          <Text style={[styles.menuText, { color: "#FF3B30" }]}>Đăng xuất</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("TransactionHistory")}
         >
@@ -119,17 +111,9 @@ export default function ProfileScreen() {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <View style={styles.menuIconCircle}>
-            <Ionicons name="settings-outline" size={20} color="#FFF" />
-          </View>
-          <Text style={styles.menuText}>Cài đặt tài khoản</Text>
-          <Ionicons
-            name="chevron-forward"
-            size={16}
-            color="#444"
-            style={{ marginLeft: "auto" }}
-          />
+        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+          <Ionicons name="log-out-outline" size={22} color="#FF3B30" />
+          <Text style={styles.logoutText}>Đăng xuất tài khoản</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -206,5 +190,25 @@ const styles = StyleSheet.create({
     backgroundColor: "#1C1C1E",
     justifyContent: "center",
     alignItems: "center",
+  },
+
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 40,
+    marginBottom: 20,
+    paddingVertical: 15,
+    marginHorizontal: 20,
+    backgroundColor: "#FF3B3010",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#FF3B3030",
+  },
+  logoutText: {
+    color: "#FF3B30",
+    fontSize: 15,
+    fontWeight: "bold",
+    marginLeft: 10,
   },
 });

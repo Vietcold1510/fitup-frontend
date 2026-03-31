@@ -26,8 +26,11 @@ generatePlan: (profileId: string) =>
   completeSession: (id: string) => http.post(`/api/workout-sessions/${id}/complete`),
 
 // 7. Cập nhật trạng thái
-  updateExerciseStatus: (exerciseId: string) => 
-    http.patch(`/api/workout-plans/exercises/${exerciseId}/status`, { "isDone": true }),
+updateExerciseStatus: (exerciseId: string, body: { isDone: boolean }) => {
+    const url = `/api/workout-plans/exercises/${exerciseId}/status`; 
+    console.log(`🚀 Đang PATCH tới: ${url}`); // Để Hàn check log cho chắc
+    return http.patch(url, body);
+  },
 
   // 8. Xóa lộ trình
   deletePlan: (id: string) => http.delete(`/api/workout-plans/${id}`),
