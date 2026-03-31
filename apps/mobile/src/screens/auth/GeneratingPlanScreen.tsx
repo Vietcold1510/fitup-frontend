@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, View, Text, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { useGeneratingPlan } from "./useGeneratingPlan"; // Check path
+import { useGeneratingPlan } from "./useGeneratingPlan";
 
 export default function GeneratingPlanScreen() {
   const { progress, statusMessage, onboardingProfileId } = useGeneratingPlan();

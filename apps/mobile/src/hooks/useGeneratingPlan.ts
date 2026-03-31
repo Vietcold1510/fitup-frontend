@@ -3,12 +3,18 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { workoutPlanRequest } from "../api/workoutPlan";
 
-export const useGeneratingPlan = () => {
+// 1. ĐỊNH NGHĨA INTERFACE ĐỂ TS KHÔNG BÁO ĐỎ
+interface GeneratingPlanResult {
+  progress: number;
+  statusMessage: string;
+  onboardingProfileId: string | undefined;
+}
+
+export const useGeneratingPlan = (): GeneratingPlanResult => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
 
-  // Nhận ID từ màn hình Onboarding
   const onboardingProfileId = route.params?.onboardingProfileId;
 
   const [progress, setProgress] = useState(0);
@@ -42,12 +48,13 @@ export const useGeneratingPlan = () => {
 
     triggerGenerate();
 
-    // Quản lý thanh Progress (4 giây)
+    // Quản lý thanh Progress
     let cur = 0;
     const interval = setInterval(() => {
-      // Nếu API xong thì chạy nhanh (step 5), chưa xong thì bò chậm (step 1)
+      // Logic tăng tốc thông minh
       const increment = isApiDone.current ? 5 : 1;
       
+      // Nếu chưa xong API thì đứng đợi ở 99%
       if (cur < 99 || isApiDone.current) {
         cur += increment;
       }
@@ -57,12 +64,12 @@ export const useGeneratingPlan = () => {
         setProgress(100);
         if (isApiDone.current) {
           clearInterval(interval);
-          console.log("🚀 [STEP 2] HOÀN TẤT -> CHUYỂN VỀ HOME");
+          console.log("🚀 [STEP 2] HOÀT TẤT -> CHUYỂN VỀ HOME");
+          // Hàn nhớ kiểm tra xem tên route chính xác là "Main" hay "MainTab" nhé
           navigation.replace("Main"); 
         }
       } else {
         setProgress(cur);
-        // Cập nhật text theo tiến độ
         if (cur < 40) setStatusMessage("Đang phân tích mục tiêu...");
         else if (cur < 80) setStatusMessage("Đang thiết lập bài tập...");
         else setStatusMessage("Sắp xong rồi...");
@@ -75,6 +82,6 @@ export const useGeneratingPlan = () => {
   return { 
     progress, 
     statusMessage, 
-    onboardingProfileId 
+    onboardingProfileId, 
   };
 };
