@@ -102,6 +102,35 @@ export default function ProfileScreen() {
           <Ionicons name="log-out-outline" size={22} color="#FF3B30" />
           <Text style={[styles.menuText, { color: "#FF3B30" }]}>Đăng xuất</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("TransactionHistory")}
+        >
+          <View style={styles.menuIconCircle}>
+            <Ionicons name="receipt-outline" size={20} color="#FF9500" />
+          </View>
+          <Text style={styles.menuText}>Lịch sử giao dịch</Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color="#444"
+            style={{ marginLeft: "auto" }}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <View style={styles.menuIconCircle}>
+            <Ionicons name="settings-outline" size={20} color="#FFF" />
+          </View>
+          <Text style={styles.menuText}>Cài đặt tài khoản</Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color="#444"
+            style={{ marginLeft: "auto" }}
+          />
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -124,7 +153,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   premiumTitleRow: { flexDirection: "row", alignItems: "center" },
-  premiumTitle: { color: "#FFF", fontWeight: "bold", fontSize: 16, marginLeft: 6 },
+  premiumTitle: {
+    color: "#FFF",
+    fontWeight: "bold",
+    fontSize: 16,
+    marginLeft: 6,
+  },
   premiumStatusTag: { fontSize: 12, fontWeight: "700" },
   premiumInfoRow: { flexDirection: "row", alignItems: "center", marginTop: 8 },
   premiumDesc: { color: "#BDBDBD", fontSize: 13 },
@@ -164,4 +198,13 @@ const styles = StyleSheet.create({
     borderBottomColor: "#1C1C1E",
   },
   menuText: { color: "#FFF", fontSize: 16, marginLeft: 15 },
+
+  menuIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#1C1C1E",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
