@@ -9,17 +9,61 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { useAuthContext } from "@/context/AuthContext"; // Lấy Role từ đây
+import { premiumRequest } from "@/api/premium";
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { userRole, logout } = useAuthContext();
+  const { data: premiumStatusRes } = useQuery({
+    queryKey: ["premium-my-status"],
+    queryFn: () => premiumRequest.getMyStatus(),
+  });
+  const premiumStatus = premiumStatusRes?.data?.data;
+  const isPremiumActive =
+    !!premiumStatus?.hasPremium && !!premiumStatus?.isActive;
 
   return (
     <ScrollView style={styles.container}>
       {/* ... Các phần thông tin cá nhân của Hàn ở trên ... */}
 
       <View style={styles.content}>
+        <View style={styles.premiumCard}>
+          <View style={styles.premiumHeaderRow}>
+            <View style={styles.premiumTitleRow}>
+              <Ionicons name="diamond" size={16} color="#FF9500" />
+              <Text style={styles.premiumTitle}>Gói Premium</Text>
+            </View>
+            <Text
+              style={[
+                styles.premiumStatusTag,
+                { color: isPremiumActive ? "#4CD964" : "#999" },
+              ]}
+            >
+              {isPremiumActive ? "Đang hoạt động" : "Chưa kích hoạt"}
+            </Text>
+          </View>
+
+          {isPremiumActive ? (
+            <>
+              <View style={styles.premiumInfoRow}>
+                <Text style={styles.premiumDesc}>Còn lại </Text>
+                <Text style={styles.premiumDayValue}>
+                  {premiumStatus?.remainingDays ?? 0}
+                </Text>
+                <Text style={styles.premiumDesc}> ngày</Text>
+              </View>
+              <Text style={styles.premiumDateText}>
+                Hết hạn: {dayjs(premiumStatus.endDate).format("DD/MM/YYYY")}
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.premiumDateText}>Bạn chưa có gói premium</Text>
+          )}
+        </View>
+
         {/* CHỈ HIỆN NÚT ĐĂNG KÝ NẾU CHƯA LÀ PT */}
         {userRole !== "PT" && (
           <TouchableOpacity
@@ -66,6 +110,26 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#121212" },
   content: { padding: 20, marginTop: 30 },
+  premiumCard: {
+    backgroundColor: "#1C1C1E",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#2C2C2E",
+    padding: 16,
+    marginBottom: 18,
+  },
+  premiumHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  premiumTitleRow: { flexDirection: "row", alignItems: "center" },
+  premiumTitle: { color: "#FFF", fontWeight: "bold", fontSize: 16, marginLeft: 6 },
+  premiumStatusTag: { fontSize: 12, fontWeight: "700" },
+  premiumInfoRow: { flexDirection: "row", alignItems: "center", marginTop: 8 },
+  premiumDesc: { color: "#BDBDBD", fontSize: 13 },
+  premiumDayValue: { color: "#FF9500", fontWeight: "900", fontSize: 16 },
+  premiumDateText: { color: "#8F8F8F", fontSize: 12, marginTop: 8 },
   ptCard: {
     borderRadius: 20,
     overflow: "hidden",

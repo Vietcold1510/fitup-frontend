@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import HomeScreen from "@/screens/auth/HomeScreen";
 import ProfileScreen from "@/screens/main/profile/ProfileScreen";
 import UserExploreScreen from "@/screens/main/trainer/UserExploreScreen";
+import PremiumScreen from "@/screens/main/premium/PremiumScreen";
 const Placeholder = () => <HomeScreen />;
 const Tab = createBottomTabNavigator();
 
@@ -28,8 +29,8 @@ export default function MainTab() {
             iconName = focused ? "home" : "home-outline";
           else if (route.name === "Workouts")
             iconName = focused ? "barbell" : "barbell-outline";
-          else if (route.name === "Nutrition")
-            iconName = focused ? "restaurant" : "restaurant-outline";
+          else if (route.name === "Premium")
+            iconName = focused ? "diamond" : "diamond-outline";
           else if (route.name === "Trainers")
             iconName = focused ? "people" : "people-outline";
           else if (route.name === "Profile")
@@ -41,7 +42,7 @@ export default function MainTab() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Workouts" component={Placeholder} />
-      <Tab.Screen name="Nutrition" component={Placeholder} />
+      <Tab.Screen name="Premium" component={PremiumScreen} />
       <Tab.Screen name="Trainers" component={UserExploreScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

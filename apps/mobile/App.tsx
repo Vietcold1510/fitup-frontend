@@ -24,6 +24,7 @@ import PtScheduleScreen from "@/screens/main/pt/PtScheduleScreen";
 import PtSetAvailabilityScreen from "@/screens/main/pt/PtSetAvailabilityScreen";
 import PtBookingRequestsScreen from "@/screens/main/pt/PtBookingRequestsScreen";
 import PtBookingDetailScreen from "@/screens/main/pt/PtBookingDetailScreen";
+import PremiumDetailScreen from "@/screens/main/premium/PremiumDetailScreen";
 
 const MS_ROLE_KEY =
   "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
@@ -104,6 +105,7 @@ function RootNavigation() {
             component={GeneratingPlanScreen}
           />
           <Stack.Screen name="WorkoutPlayer" component={WorkoutPlayerScreen} />
+          <Stack.Screen name="PremiumDetail" component={PremiumDetailScreen} />
 
           {/* 3. CÁC MÀN HÌNH PHỤ CỦA USER */}
           {userRole !== "PT" && (

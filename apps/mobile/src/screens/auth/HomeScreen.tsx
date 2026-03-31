@@ -19,8 +19,9 @@ import { useWorkout } from "@/hooks/useWorkout";
 import { GoalType } from "@/utils/enum";
 
 // <-- IMPORT CÁC HOOK VÀ API MỚI
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { workoutPlanRequest } from "@/api/workoutPlan";
+import { premiumRequest } from "@/api/premium";
 
 const { width } = Dimensions.get("window");
 
@@ -29,6 +30,13 @@ export default function HomeScreen() {
   const queryClient = useQueryClient();
   const { allPlans, todaySession, isLoadingPlans, isLoadingToday } =
     useWorkout();
+  const { data: premiumStatusRes } = useQuery({
+    queryKey: ["premium-my-status"],
+    queryFn: () => premiumRequest.getMyStatus(),
+  });
+  const premiumStatus = premiumStatusRes?.data?.data;
+  const isPremiumActive =
+    !!premiumStatus?.hasPremium && !!premiumStatus?.isActive;
 
   // 1. MUTATION: XỬ LÝ XÓA LỘ TRÌNH
   const deletePlanMutation = useMutation({
@@ -95,6 +103,24 @@ export default function HomeScreen() {
           <View>
             <Text style={styles.welcomeText}>Chào Hàn! 👋</Text>
             <Text style={styles.subWelcome}>Hôm nay bạn muốn tập gì?</Text>
+            <View style={styles.premiumBadge}>
+              <Ionicons
+                name={isPremiumActive ? "diamond" : "diamond-outline"}
+                size={14}
+                color="#FF9500"
+              />
+              {isPremiumActive ? (
+                <Text style={styles.premiumText}>
+                  <Text style={styles.premiumLabel}>Premium còn </Text>
+                  <Text style={styles.premiumValue}>
+                    {premiumStatus?.remainingDays ?? 0}
+                  </Text>
+                  <Text style={styles.premiumLabel}> ngày</Text>
+                </Text>
+              ) : (
+                <Text style={styles.premiumInactiveText}>Bạn chưa có Premium</Text>
+              )}
+            </View>
           </View>
           <TouchableOpacity style={styles.profileBtn}>
             <Ionicons name="person-circle-outline" size={40} color="#FFF" />
@@ -262,6 +288,22 @@ const styles = StyleSheet.create({
   },
   welcomeText: { color: "#FFF", fontSize: 24, fontWeight: "bold" },
   subWelcome: { color: "#888", fontSize: 14, marginTop: 4 },
+  premiumBadge: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1C1C1E",
+    borderWidth: 1,
+    borderColor: "#2C2C2E",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  premiumText: { fontSize: 12, marginLeft: 6 },
+  premiumLabel: { color: "#BBB", fontSize: 12 },
+  premiumValue: { color: "#FF9500", fontWeight: "800", fontSize: 12 },
+  premiumInactiveText: { color: "#BBB", fontSize: 12, marginLeft: 6 },
   profileBtn: { padding: 4 },
   section: { marginTop: 25 },
   sectionTitle: {
