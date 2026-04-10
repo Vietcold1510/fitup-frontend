@@ -16,6 +16,7 @@ import { PaymentStatus, ServiceType } from "@/utils/enum";
 
 export default function TransactionDetailScreen({ route, navigation }: any) {
   const { paymentId } = route.params || {};
+  const formatPoints = (amount: number) => `${amount.toLocaleString("vi-VN")} Pts`;
 
   // 1. GỌI API CHI TIẾT
   const {
@@ -90,7 +91,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
             />
           </View>
           <Text style={styles.amountText}>
-            -{detail.amount.toLocaleString()}đ
+            -{formatPoints(detail.amount)}
           </Text>
           <Text
             style={[
@@ -129,7 +130,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
               <Text style={styles.sectionTitle}>CHI TIẾT LỊCH TẬP</Text>
               <DetailRow
                 label="Giá mỗi buổi"
-                value={booking.price.toLocaleString() + "đ"}
+                value={formatPoints(booking.price)}
               />
               <DetailRow
                 label="Ghi chú"
@@ -138,7 +139,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Tổng tiền</Text>
                 <Text style={styles.totalValue}>
-                  {booking.total.toLocaleString()}đ
+                  {formatPoints(booking.total)}
                 </Text>
               </View>
             </>
@@ -162,7 +163,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Giá gói</Text>
                 <Text style={styles.totalValue}>
-                  {premium.price.toLocaleString()}đ
+                  {formatPoints(premium.price)}
                 </Text>
               </View>
             </>

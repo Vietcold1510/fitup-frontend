@@ -7,7 +7,7 @@ import HomeScreen from "@/screens/auth/HomeScreen";
 import ProfileScreen from "@/screens/main/profile/ProfileScreen";
 import UserExploreScreen from "@/screens/main/trainer/UserExploreScreen";
 import PremiumScreen from "@/screens/main/premium/PremiumScreen";
-const Placeholder = () => <HomeScreen />;
+import WorkoutsScreen from "@/screens/main/workouts/WorkoutsScreen";
 const Tab = createBottomTabNavigator();
 
 export default function MainTab() {
@@ -41,7 +41,7 @@ export default function MainTab() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Workouts" component={Placeholder} />
+      <Tab.Screen name="Workouts" component={WorkoutsScreen} />
       <Tab.Screen name="Premium" component={PremiumScreen} />
       <Tab.Screen name="Trainers" component={UserExploreScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />

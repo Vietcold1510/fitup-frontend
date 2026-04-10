@@ -11,8 +11,9 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useAuthContext } from "@/context/AuthContext"; // Lấy Role từ đây
+import { useAuthContext } from "@/context/AuthContext";
 import { premiumRequest } from "@/api/premium";
+import { usePointAmount } from "@/hooks/usePointAmount";
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
@@ -21,15 +22,31 @@ export default function ProfileScreen() {
     queryKey: ["premium-my-status"],
     queryFn: () => premiumRequest.getMyStatus(),
   });
+  const { data: pointAmount = 0 } = usePointAmount({
+    enabled: userRole !== "PT",
+  });
   const premiumStatus = premiumStatusRes?.data?.data;
   const isPremiumActive =
     !!premiumStatus?.hasPremium && !!premiumStatus?.isActive;
 
   return (
     <ScrollView style={styles.container}>
-      {/* ... Các phần thông tin cá nhân của Hàn ở trên ... */}
-
       <View style={styles.content}>
+        {userRole !== "PT" && (
+          <View style={styles.pointCard}>
+            <View style={styles.pointHeaderRow}>
+              <View style={styles.pointTitleRow}>
+                <Ionicons name="wallet-outline" size={16} color="#FF9500" />
+                <Text style={styles.pointTitle}>Điểm của bạn</Text>
+              </View>
+              <Text style={styles.pointCaption}>Point balance</Text>
+            </View>
+            <Text style={styles.pointAmount}>
+              {pointAmount.toLocaleString("vi-VN")} Pts
+            </Text>
+          </View>
+        )}
+
         <View style={styles.premiumCard}>
           <View style={styles.premiumHeaderRow}>
             <View style={styles.premiumTitleRow}>
@@ -64,14 +81,13 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* CHỈ HIỆN NÚT ĐĂNG KÝ NẾU CHƯA LÀ PT */}
         {userRole !== "PT" && (
           <TouchableOpacity
             style={styles.ptCard}
             onPress={() => navigation.navigate("PtRegister")}
           >
             <LinearGradient
-              colors={["#5856D6", "#AF52DE"]}
+              colors={["#5B3FD1", "#8F5BFF"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.ptGradient}
@@ -89,10 +105,17 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
 
-        {/* CÁC MENU KHÁC */}
         <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="settings-outline" size={22} color="#FFF" />
+          <View style={styles.menuIconCircle}>
+            <Ionicons name="settings-outline" size={20} color="#FFF" />
+          </View>
           <Text style={styles.menuText}>Cài đặt tài khoản</Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color="#444"
+            style={{ marginLeft: "auto" }}
+          />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -123,6 +146,33 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#121212" },
   content: { padding: 20, marginTop: 30 },
+  pointCard: {
+    backgroundColor: "#1C1C1E",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#2C2C2E",
+    padding: 16,
+    marginBottom: 18,
+  },
+  pointHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  pointTitleRow: { flexDirection: "row", alignItems: "center" },
+  pointTitle: {
+    color: "#FFF",
+    fontWeight: "bold",
+    fontSize: 16,
+    marginLeft: 6,
+  },
+  pointCaption: { color: "#8F8F8F", fontSize: 11 },
+  pointAmount: {
+    color: "#FF9500",
+    fontWeight: "900",
+    fontSize: 28,
+    marginTop: 10,
+  },
   premiumCard: {
     backgroundColor: "#1C1C1E",
     borderRadius: 16,
@@ -152,6 +202,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
     marginBottom: 30,
+    borderWidth: 1,
+    borderColor: "#7B61FF",
     elevation: 5,
     shadowColor: "#AF52DE",
     shadowOffset: { width: 0, height: 4 },
@@ -165,7 +217,7 @@ const styles = StyleSheet.create({
   },
   ptInfo: { flex: 1 },
   ptTitle: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
-  ptSub: { color: "#EEE", fontSize: 12, marginTop: 4, opacity: 0.8 },
+  ptSub: { color: "#F1E9FF", fontSize: 12, marginTop: 4, opacity: 1 },
   ptIconBox: {
     width: 36,
     height: 36,
@@ -182,7 +234,6 @@ const styles = StyleSheet.create({
     borderBottomColor: "#1C1C1E",
   },
   menuText: { color: "#FFF", fontSize: 16, marginLeft: 15 },
-
   menuIconCircle: {
     width: 36,
     height: 36,
@@ -191,7 +242,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   logoutBtn: {
     flexDirection: "row",
     alignItems: "center",
