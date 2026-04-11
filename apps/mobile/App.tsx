@@ -27,6 +27,8 @@ import PtBookingDetailScreen from "@/screens/main/pt/PtBookingDetailScreen";
 import PremiumDetailScreen from "@/screens/main/premium/PremiumDetailScreen";
 import TransactionHistoryScreen from "@/screens/main/payment/TransactionHistoryScreen";
 import TransactionDetailScreen from "@/screens/main/payment/TransactionDetailScreen";
+import AiChatConversationsScreen from "@/screens/main/chat/AiChatConversationsScreen";
+import AiChatDetailScreen from "@/screens/main/chat/AiChatDetailScreen";
 
 const MS_ROLE_KEY =
   "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
@@ -116,6 +118,11 @@ function RootNavigation() {
             name="TransactionDetail"
             component={TransactionDetailScreen}
           />
+          <Stack.Screen
+            name="AiChatConversations"
+            component={AiChatConversationsScreen}
+          />
+          <Stack.Screen name="AiChatDetail" component={AiChatDetailScreen} />
 
           {/* 3. CÁC MÀN HÌNH PHỤ CỦA USER */}
           {userRole !== "PT" && (

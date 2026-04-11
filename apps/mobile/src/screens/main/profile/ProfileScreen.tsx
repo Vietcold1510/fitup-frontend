@@ -120,6 +120,26 @@ export default function ProfileScreen() {
 
         <TouchableOpacity
           style={styles.menuItem}
+          onPress={() => navigation.navigate("AiChatConversations")}
+        >
+          <View style={styles.menuIconCircle}>
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={20}
+              color="#0A84FF"
+            />
+          </View>
+          <Text style={styles.menuText}>AI Chat</Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color="#444"
+            style={{ marginLeft: "auto" }}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={() => navigation.navigate("TransactionHistory")}
         >
           <View style={styles.menuIconCircle}>

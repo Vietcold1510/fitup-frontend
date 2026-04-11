@@ -61,7 +61,7 @@ export default function HomeScreen() {
               <Text style={styles.metaLabel}>Premium</Text>
               <Text style={styles.metaValue}>
                 {isPremiumActive
-                  ? `${premiumStatus?.remainingDays ?? 0} ngay`
+                  ? `${premiumStatus?.remainingDays ?? 0} ngày`
                   : "Chua kich hoat"}
               </Text>
             </View>
@@ -128,6 +128,22 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#FF9500" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.aiShortcut}
+            onPress={() => navigation.navigate("AiChatConversations")}
+          >
+            <View style={styles.aiIcon}>
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color="#0A84FF" />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>AI Chat</Text>
+              <Text style={styles.actionSub}>
+                 Giải đáp thắc mắc của bạn với trợ lý AI
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#0A84FF" />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -236,11 +252,29 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  aiShortcut: {
+    marginTop: 12,
+    backgroundColor: "#1C1C1E",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#0A84FF44",
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+  },
   actionIcon: {
     width: 38,
     height: 38,
     borderRadius: 12,
     backgroundColor: "#FF950014",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  aiIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#0A84FF14",
     justifyContent: "center",
     alignItems: "center",
   },
