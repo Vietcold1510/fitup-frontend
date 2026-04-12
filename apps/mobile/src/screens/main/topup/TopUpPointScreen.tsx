@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -8,12 +8,11 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  Linking,
   Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { useConversionRates, useCreateTopup } from "@/hooks/useTopup";
 import { usePointAmount } from "@/hooks/usePointAmount";
 
@@ -22,13 +21,26 @@ const PRESET_AMOUNTS = [10000, 20000, 50000, 100000, 200000, 500000];
 
 export default function TopUpPointScreen() {
   const navigation = useNavigation<any>();
-  const [amount, setAmount] = useState<string>("");
+  const route = useRoute<any>();
+
+  // 1. Khai báo State & Params
+  const { suggestedAmount } = route.params || {};
+  const [amount, setAmount] = useState<string>(
+    suggestedAmount ? suggestedAmount.toString() : "",
+  );
 
   const { data: pointAmount = 0 } = usePointAmount();
   const { data: rates, isLoading: isLoadingRates } = useConversionRates();
   const createTopupMutation = useCreateTopup();
 
-  // Lấy tỉ giá nạp tiền (Type 1)
+  // 2. Logic useEffect (Cập nhật khi suggestedAmount thay đổi)
+  useEffect(() => {
+    if (suggestedAmount) {
+      setAmount(suggestedAmount.toString());
+    }
+  }, [suggestedAmount]);
+
+  // 3. Logic useMemo (Sắp xếp đúng thứ tự để không lỗi)
   const topupRate = useMemo(
     () => rates?.find((r: any) => r.type === 1),
     [rates],
@@ -39,6 +51,11 @@ export default function TopUpPointScreen() {
     return Math.floor(numAmount / (topupRate?.rate || 1));
   }, [amount, topupRate]);
 
+  const totalAfterTopup = useMemo(() => {
+    return pointAmount + calculatedPoints;
+  }, [pointAmount, calculatedPoints]);
+
+  // 4. Hàm xử lý nạp tiền
   const handleTopUp = async () => {
     const numAmount = parseInt(amount);
     if (!numAmount || numAmount < 1000) {
@@ -47,14 +64,12 @@ export default function TopUpPointScreen() {
     }
 
     try {
-      // 💡 ĐƯỜNG VỀ APP: Khi PayOS xong, nó sẽ gọi link này để mở lại App
       const appScheme = "fitup://payment-result";
-
       const res = await createTopupMutation.mutateAsync({
         amountVnd: numAmount,
         conversionRateId: topupRate?.id,
-        returnUrl: appScheme, // Backend cần nhận tham số này
-        cancelUrl: appScheme, // Backend cần nhận tham số này
+        returnUrl: appScheme,
+        cancelUrl: appScheme,
       } as any);
 
       const checkoutUrl = res.data.data.checkoutUrl;
@@ -80,7 +95,7 @@ export default function TopUpPointScreen() {
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Số dư hiện tại</Text>
           <Text style={styles.balanceValue}>
-            {pointAmount.toLocaleString()} Pts
+            {pointAmount.toLocaleString()}P
           </Text>
         </View>
 
@@ -112,12 +127,22 @@ export default function TopUpPointScreen() {
           ))}
         </View>
 
+        {/* Hiển thị Tổng cộng */}
         {parseInt(amount) > 0 && (
-          <View style={styles.infoBox}>
-            <Text style={styles.infoText}>Bạn sẽ nhận được:</Text>
-            <Text style={styles.infoValue}>
-              {calculatedPoints.toLocaleString()} Pts
-            </Text>
+          <View style={styles.summaryContainer}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.infoText}>Số điểm nạp thêm:</Text>
+              <Text style={styles.infoValue}>
+                + {calculatedPoints.toLocaleString()}P
+              </Text>
+            </View>
+
+            <View style={[styles.summaryRow, styles.totalRow]}>
+              <Text style={styles.totalLabel}>Tổng điểm sau nạp:</Text>
+              <Text style={styles.totalValue}>
+                {totalAfterTopup.toLocaleString()}P
+              </Text>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -153,7 +178,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1C1C1E",
     padding: 20,
     borderRadius: 16,
-    marginBottom: 30,
+    marginBottom: 20,
   },
   balanceLabel: { color: "#8F8F8F", fontSize: 14 },
   balanceValue: {
@@ -161,6 +186,20 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     marginTop: 5,
+  },
+  suggestedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FF950020",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  suggestedText: {
+    color: "#FF9500",
+    fontSize: 12,
+    marginLeft: 6,
+    fontWeight: "500",
   },
   sectionTitle: { color: "#FFF", fontSize: 16, marginBottom: 15 },
   inputContainer: {
@@ -188,16 +227,37 @@ const styles = StyleSheet.create({
   },
   activePreset: { borderWidth: 1, borderColor: "#FF9500" },
   presetText: { color: "#FFF", fontWeight: "600" },
-  infoBox: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: "#4CD96410",
-    borderRadius: 12,
+  summaryContainer: {
+    marginTop: 25,
+    padding: 20,
+    backgroundColor: "#1C1C1E",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#2C2C2E",
+  },
+  summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
   },
-  infoText: { color: "#8F8F8F" },
-  infoValue: { color: "#4CD964", fontWeight: "bold" },
+  totalRow: {
+    marginTop: 8,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#333",
+  },
+  infoText: { color: "#8F8F8F", fontSize: 14 },
+  infoValue: { color: "#4CD964", fontWeight: "bold", fontSize: 16 },
+  totalLabel: { color: "#FFF", fontSize: 15, fontWeight: "600" },
+  totalValue: { color: "#FF9500", fontWeight: "900", fontSize: 20 },
+  noteText: {
+    color: "#444",
+    fontSize: 11,
+    fontStyle: "italic",
+    marginTop: 10,
+    textAlign: "right",
+  },
   footer: { padding: 20, borderTopWidth: 1, borderTopColor: "#1C1C1E" },
   payBtn: {
     backgroundColor: "#FF9500",
