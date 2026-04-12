@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   Dimensions,
   Alert,
   ActivityIndicator,
@@ -13,11 +12,23 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { workoutPlanRequest } from "@/api/workoutPlan";
+import { WebView } from "react-native-webview";
+import { Asset } from "expo-asset";
 
 const { width } = Dimensions.get("window");
+const MOCK_WORKOUT_VIDEO_LOCAL_URI = Asset.fromModule(
+  require("../../../../assets/scpd.mp4"),
+).uri;
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
 export default function WorkoutPlayerScreen() {
   const route = useRoute<any>();
@@ -48,6 +59,53 @@ export default function WorkoutPlayerScreen() {
 
   const currentEx = exercises[currentIndex];
   const isTimerEx = !!currentEx?.durationSeconds;
+  const workoutVideoUrlRaw = currentEx?.workout?.instructionVidLink;
+  const isRemoteVideo =
+    typeof workoutVideoUrlRaw === "string" &&
+    /^https?:\/\//i.test(workoutVideoUrlRaw.trim());
+  const resolvedWorkoutVideoUrl = isRemoteVideo
+    ? workoutVideoUrlRaw.trim()
+    : MOCK_WORKOUT_VIDEO_LOCAL_URI;
+  const workoutVideoHtml = useMemo(
+    () => `
+      <!doctype html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+          <style>
+            html, body {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+              height: 100%;
+              background: #121212;
+              overflow: hidden;
+            }
+            .wrap {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: #121212;
+            }
+            video {
+              width: 100%;
+              height: 100%;
+              background: #000;
+              pointer-events: none;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="wrap">
+            <video autoplay loop muted playsinline webkit-playsinline preload="auto" src="${escapeHtml(resolvedWorkoutVideoUrl)}"></video>
+          </div>
+        </body>
+      </html>
+    `,
+    [resolvedWorkoutVideoUrl],
+  );
 
   // 4. MUTATION CẬP NHẬT TRẠNG THÁI (DONE/SKIP)
   const updateStatusMutation = useMutation({
@@ -157,17 +215,17 @@ export default function WorkoutPlayerScreen() {
       >
         {/* MEDIA SECTION */}
         <View style={styles.mediaBox}>
-          <Image
-            source={{
-              uri:
-                currentEx.workout?.thumbnail ||
-                "https://via.placeholder.com/400x300/1C1C1E/FF9500?text=FitUp+Exercise",
-            }}
-            style={styles.image}
-          />
-          <LinearGradient
-            colors={["transparent", "#121212"]}
-            style={styles.fade}
+          <WebView
+            pointerEvents="none"
+            source={{ html: workoutVideoHtml, baseUrl: "" }}
+            style={styles.videoWebView}
+            originWhitelist={["*"]}
+            javaScriptEnabled
+            domStorageEnabled
+            allowsInlineMediaPlayback
+            mediaPlaybackRequiresUserAction={false}
+            scrollEnabled={false}
+            bounces={false}
           />
         </View>
 
@@ -288,8 +346,7 @@ const styles = StyleSheet.create({
   },
 
   mediaBox: { width: width, height: 260, backgroundColor: "#1C1C1E" },
-  image: { width: "100%", height: "100%", resizeMode: "cover" },
-  fade: { position: "absolute", bottom: 0, left: 0, right: 0, height: 60 },
+  videoWebView: { width: "100%", height: "100%", backgroundColor: "#1C1C1E" },
 
   infoBox: { paddingHorizontal: 30, alignItems: "center", marginTop: 10 },
   exName: {

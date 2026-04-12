@@ -67,6 +67,7 @@ export default function WorkoutVideoScreen() {
             <video
               autoplay
               loop
+              muted
               playsinline
               webkit-playsinline
               preload="auto"
