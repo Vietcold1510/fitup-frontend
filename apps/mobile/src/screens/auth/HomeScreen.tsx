@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { premiumRequest } from "@/api/premium";
 import { usePointAmount } from "@/hooks/usePointAmount";
@@ -21,12 +21,19 @@ const appLogo = require("../../../assets/Fitness_Logo__1_-removebg-preview.png")
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
-  const { data: premiumStatusRes } = useQuery({
+  const { data: premiumStatusRes, refetch: refetchPremiumStatus } = useQuery({
     queryKey: ["premium-my-status"],
     queryFn: () => premiumRequest.getMyStatus(),
   });
-  const { data: pointAmount = 0 } = usePointAmount();
+  const { data: pointAmount = 0, refetch: refetchPointAmount } = usePointAmount();
   const { todaySession, isLoadingToday } = useWorkout();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refetchPointAmount();
+      refetchPremiumStatus();
+    }, [refetchPointAmount, refetchPremiumStatus]),
+  );
 
   const premiumStatus = premiumStatusRes?.data?.data;
   const isPremiumActive =

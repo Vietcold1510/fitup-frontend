@@ -85,7 +85,7 @@ export default function TransactionHistoryScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Lịch sử giao dịch</Text>
+        <Text style={styles.headerTitle}>Lịch sử dùng point</Text>
         <View style={{ width: 24 }} />
       </View>
 

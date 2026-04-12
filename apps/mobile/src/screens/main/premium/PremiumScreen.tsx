@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { premiumRequest } from "@/api/premium";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { usePointAmount } from "@/hooks/usePointAmount";
 
 type PremiumType = {
   id: string;
@@ -55,12 +56,14 @@ export default function PremiumScreen() {
     queryFn: () => premiumRequest.getMyStatus(),
     staleTime: 0,
   });
+  const { refetch: refetchPointAmount } = usePointAmount();
 
   useFocusEffect(
     React.useCallback(() => {
       refetchTypes();
       refetchMyStatus();
-    }, [refetchTypes, refetchMyStatus]),
+      refetchPointAmount();
+    }, [refetchPointAmount, refetchTypes, refetchMyStatus]),
   );
 
   const types: PremiumType[] = typesRes?.data?.data || [];

@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -18,16 +18,25 @@ import { usePointAmount } from "@/hooks/usePointAmount";
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { userRole, logout } = useAuthContext();
-  const { data: premiumStatusRes } = useQuery({
+  const { data: premiumStatusRes, refetch: refetchPremiumStatus } = useQuery({
     queryKey: ["premium-my-status"],
     queryFn: () => premiumRequest.getMyStatus(),
   });
-  const { data: pointAmount = 0 } = usePointAmount({
+  const { data: pointAmount = 0, refetch: refetchPointAmount } = usePointAmount({
     enabled: userRole !== "PT",
   });
   const premiumStatus = premiumStatusRes?.data?.data;
   const isPremiumActive =
     !!premiumStatus?.hasPremium && !!premiumStatus?.isActive;
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (userRole !== "PT") {
+        refetchPointAmount();
+      }
+      refetchPremiumStatus();
+    }, [refetchPointAmount, refetchPremiumStatus, userRole]),
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -40,14 +49,6 @@ export default function ProfileScreen() {
                 <Text style={styles.pointTitle}>Điểm của bạn</Text>
               </View>
 
-              {/* 🚀 NÚT LỊCH SỬ MỚI THÊM Ở ĐÂY */}
-              <TouchableOpacity
-                style={styles.historyBtnSmall}
-                onPress={() => navigation.navigate("TopUpHistory")}
-              >
-                <Text style={styles.historyBtnText}>Lịch sử nạp</Text>
-                <Ionicons name="chevron-forward" size={12} color="#8F8F8F" />
-              </TouchableOpacity>
             </View>
 
             <View style={styles.pointMainRow}>
@@ -170,7 +171,7 @@ export default function ProfileScreen() {
           <View style={styles.menuIconCircle}>
             <Ionicons name="receipt-outline" size={20} color="#FF9500" />
           </View>
-          <Text style={styles.menuText}>Lịch sử giao dịch</Text>
+          <Text style={styles.menuText}>Lịch sử dùng point</Text>
           <Ionicons
             name="chevron-forward"
             size={16}
@@ -178,6 +179,24 @@ export default function ProfileScreen() {
             style={{ marginLeft: "auto" }}
           />
         </TouchableOpacity>
+
+        {userRole !== "PT" && (
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate("TopUpHistory")}
+          >
+            <View style={styles.menuIconCircle}>
+              <Ionicons name="card-outline" size={20} color="#34C759" />
+            </View>
+            <Text style={styles.menuText}>Lịch sử nạp điểm</Text>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color="#444"
+              style={{ marginLeft: "auto" }}
+            />
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
           <Ionicons name="log-out-outline" size={22} color="#FF3B30" />
