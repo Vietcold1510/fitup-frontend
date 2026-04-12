@@ -13,8 +13,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useQuery } from "@tanstack/react-query";
 import { useConversionRates, useCreateTopup } from "@/hooks/useTopup";
 import { usePointAmount } from "@/hooks/usePointAmount";
+import { premiumRequest } from "@/api/premium";
 
 const { width } = Dimensions.get("window");
 const PRESET_AMOUNTS = [10000, 20000, 50000, 100000, 200000, 500000];
@@ -30,21 +32,41 @@ export default function TopUpPointScreen() {
   );
 
   const { data: pointAmount = 0 } = usePointAmount();
-  const { data: rates, isLoading: isLoadingRates } = useConversionRates();
+  const { data: rates } = useConversionRates();
   const createTopupMutation = useCreateTopup();
 
-  // 2. Logic useEffect (Cập nhật khi suggestedAmount thay đổi)
+  // 2. API: Lấy danh sách gói Premium hiện có
+  const { data: premiumTypesRes, isLoading: isLoadingPlans } = useQuery({
+    queryKey: ["premium-types"],
+    queryFn: () => premiumRequest.getTypes(),
+  });
+  const premiumPlans = premiumTypesRes?.data?.data || [];
+
   useEffect(() => {
     if (suggestedAmount) {
       setAmount(suggestedAmount.toString());
     }
   }, [suggestedAmount]);
 
-  // 3. Logic useMemo (Sắp xếp đúng thứ tự để không lỗi)
   const topupRate = useMemo(
     () => rates?.find((r: any) => r.type === 1),
     [rates],
   );
+
+  // 3. LOGIC: Tự động tính tiền nạp khi chọn gói Premium
+  const handleSelectPremiumPlan = (planPrice: number) => {
+    const pointsNeeded = planPrice - pointAmount;
+
+    if (pointsNeeded <= 0) {
+      Alert.alert("Thông báo", "Hàn đã có đủ điểm để mua gói này rồi!");
+      setAmount("");
+      return;
+    }
+
+    // Tiền VNĐ = Số điểm còn thiếu * Tỉ giá (Ví dụ: 1 Pt = 1000 VNĐ)
+    const vndNeeded = pointsNeeded * (topupRate?.rate || 1);
+    setAmount(vndNeeded.toString());
+  };
 
   const calculatedPoints = useMemo(() => {
     const numAmount = parseInt(amount) || 0;
@@ -55,7 +77,6 @@ export default function TopUpPointScreen() {
     return pointAmount + calculatedPoints;
   }, [pointAmount, calculatedPoints]);
 
-  // 4. Hàm xử lý nạp tiền
   const handleTopUp = async () => {
     const numAmount = parseInt(amount);
     if (!numAmount || numAmount < 1000) {
@@ -91,7 +112,11 @@ export default function TopUpPointScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* THẺ SỐ DƯ */}
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Số dư hiện tại</Text>
           <Text style={styles.balanceValue}>
@@ -99,7 +124,40 @@ export default function TopUpPointScreen() {
           </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Nhập số tiền muốn nạp</Text>
+        {/* DANH SÁCH GÓI PREMIUM ĐỂ CHỌN NHANH */}
+        <Text style={styles.sectionTitle}>Nâng cấp Premium ngay</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.premiumList}
+        >
+          {isLoadingPlans ? (
+            <ActivityIndicator color="#FF9500" style={{ marginLeft: 20 }} />
+          ) : (
+            premiumPlans.map((plan: any) => (
+              <TouchableOpacity
+                key={plan.id}
+                style={styles.premiumPlanItem}
+                onPress={() => handleSelectPremiumPlan(plan.price)}
+              >
+                <View style={styles.diamondCircle}>
+                  <Ionicons name="diamond" size={18} color="#FF9500" />
+                </View>
+                <Text style={styles.planName} numberOfLines={1}>
+                  {plan.describe}
+                </Text>
+                <Text style={styles.planPriceLabel}>
+                  {plan.price.toLocaleString()}P
+                </Text>
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
+
+        {/* NHẬP SỐ TIỀN THỦ CÔNG */}
+        <Text style={[styles.sectionTitle, { marginTop: 25 }]}>
+          Hoặc nhập số tiền VNĐ
+        </Text>
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -127,11 +185,11 @@ export default function TopUpPointScreen() {
           ))}
         </View>
 
-        {/* Hiển thị Tổng cộng */}
+        {/* TỔNG KẾT SAU NẠP */}
         {parseInt(amount) > 0 && (
           <View style={styles.summaryContainer}>
             <View style={styles.summaryRow}>
-              <Text style={styles.infoText}>Số điểm nạp thêm:</Text>
+              <Text style={styles.infoText}>Điểm nạp thêm:</Text>
               <Text style={styles.infoValue}>
                 + {calculatedPoints.toLocaleString()}P
               </Text>
@@ -178,7 +236,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1C1C1E",
     padding: 20,
     borderRadius: 16,
-    marginBottom: 20,
+    marginBottom: 25,
   },
   balanceLabel: { color: "#8F8F8F", fontSize: 14 },
   balanceValue: {
@@ -187,21 +245,47 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 5,
   },
-  suggestedBadge: {
-    flexDirection: "row",
+
+  // Styles cho danh sách Premium
+  sectionTitle: {
+    color: "#FFF",
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 15,
+  },
+  premiumList: { marginBottom: 10 },
+  premiumPlanItem: {
+    backgroundColor: "#1C1C1E",
+    width: 130,
+    padding: 15,
+    borderRadius: 20,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: "#2C2C2E",
     alignItems: "center",
+  },
+  diamondCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#FF950020",
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
   },
-  suggestedText: {
-    color: "#FF9500",
+  planName: {
+    color: "#FFF",
     fontSize: 12,
-    marginLeft: 6,
-    fontWeight: "500",
+    fontWeight: "600",
+    textAlign: "center",
   },
-  sectionTitle: { color: "#FFF", fontSize: 16, marginBottom: 15 },
+  planPriceLabel: {
+    color: "#FF9500",
+    fontSize: 15,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -251,13 +335,6 @@ const styles = StyleSheet.create({
   infoValue: { color: "#4CD964", fontWeight: "bold", fontSize: 16 },
   totalLabel: { color: "#FFF", fontSize: 15, fontWeight: "600" },
   totalValue: { color: "#FF9500", fontWeight: "900", fontSize: 20 },
-  noteText: {
-    color: "#444",
-    fontSize: 11,
-    fontStyle: "italic",
-    marginTop: 10,
-    textAlign: "right",
-  },
   footer: { padding: 20, borderTopWidth: 1, borderTopColor: "#1C1C1E" },
   payBtn: {
     backgroundColor: "#FF9500",
