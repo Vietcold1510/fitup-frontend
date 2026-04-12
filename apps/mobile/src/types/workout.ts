@@ -10,6 +10,7 @@ export type RootStackParamList = {
   WorkoutDetail: { sessionId: string };
   WorkoutTypes: undefined;
   WorkoutTypeWorkouts: { workoutTypeId: string; workoutTypeName?: string };
+  WorkoutVideo: { workoutName?: string; videoUrl?: string | null };
 };
 
 // --- 2. Onboarding Data (Dữ liệu từ Form) ---

@@ -18,6 +18,7 @@ import GeneratingPlanScreen from "@/screens/auth/GeneratingPlanScreen";
 import WorkoutPlayerScreen from "@/screens/main/workouts/WorkoutPlayerScreen";
 import WorkoutTypesScreen from "@/screens/main/workouts/WorkoutTypesScreen";
 import WorkoutTypeWorkoutsScreen from "@/screens/main/workouts/WorkoutTypeWorkoutsScreen";
+import WorkoutVideoScreen from "@/screens/main/workouts/WorkoutVideoScreen";
 import PtRegisterScreen from "@/screens/auth/PtRegisterScreen";
 import RegisterScreen from "@/screens/auth/RegisterScreen";
 import VerifyOtpScreen from "@/screens/auth/VerifyOtpScreen";
@@ -120,6 +121,7 @@ function RootNavigation() {
             name="WorkoutTypeWorkouts"
             component={WorkoutTypeWorkoutsScreen}
           />
+          <Stack.Screen name="WorkoutVideo" component={WorkoutVideoScreen} />
           <Stack.Screen name="PremiumDetail" component={PremiumDetailScreen} />
           <Stack.Screen
             name="TransactionHistory"

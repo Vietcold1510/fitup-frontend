@@ -15,6 +15,8 @@ import { workoutRequest } from "@/api/workout";
 import { Workout } from "@/schemas/workout";
 import { EquipmentType, MuscleGroup, WorkoutLevel } from "@/utils/enum";
 
+const MOCK_WORKOUT_VIDEO_PATH = "assets/scpd.mp4";
+
 const getLevelLabel = (level: number) => {
   switch (level) {
     case WorkoutLevel.Beginner:
@@ -104,7 +106,13 @@ export default function WorkoutTypeWorkoutsScreen() {
     enabled: !!workoutTypeId,
   });
 
-  const workouts: Workout[] = workoutsRes?.data?.data || [];
+  const workouts: Workout[] = (workoutsRes?.data?.data || []).map((item) => ({
+    ...item,
+    instructionVidLink:
+      typeof item.instructionVidLink === "string" && item.instructionVidLink.trim().length > 0
+        ? item.instructionVidLink
+        : MOCK_WORKOUT_VIDEO_PATH,
+  }));
 
   if (!workoutTypeId) {
     return (
@@ -141,13 +149,19 @@ export default function WorkoutTypeWorkoutsScreen() {
           refreshing={isRefetching}
           onRefresh={refetch}
           renderItem={({ item }) => {
-            const hasVideo =
-              typeof item.instructionVidLink === "string" &&
-              item.instructionVidLink.trim().length > 0;
             const levelStyle = getLevelStyle(item.level);
 
             return (
-              <View style={styles.workoutCard}>
+              <TouchableOpacity
+                style={styles.workoutCard}
+                activeOpacity={0.85}
+                onPress={() =>
+                  navigation.navigate("WorkoutVideo", {
+                    workoutName: item.name,
+                    videoUrl: item.instructionVidLink,
+                  })
+                }
+              >
                 <View style={styles.workoutHeader}>
                   <Text style={styles.workoutName}>{item.name}</Text>
                   <View style={[styles.levelBadge, levelStyle.badge]}>
@@ -167,14 +181,7 @@ export default function WorkoutTypeWorkoutsScreen() {
                     <Text style={styles.metaText}>{getMuscleLabel(item.primaryMuscle)}</Text>
                   </View>
                 </View>
-
-                {hasVideo && (
-                  <View style={styles.videoRow}>
-                    <Ionicons name="play-circle-outline" size={16} color="#4CD964" />
-                    <Text style={styles.videoText}>Có video hướng dẫn</Text>
-                  </View>
-                )}
-              </View>
+              </TouchableOpacity>
             );
           }}
           ListHeaderComponent={
@@ -277,17 +284,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   metaText: { color: "#D9D9D9", fontSize: 12, marginLeft: 6 },
-  videoRow: {
-    marginTop: 10,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  videoText: {
-    color: "#6ED087",
-    fontSize: 12,
-    marginLeft: 6,
-    fontWeight: "600",
-  },
   emptyState: {
     marginTop: 32,
     borderRadius: 16,
