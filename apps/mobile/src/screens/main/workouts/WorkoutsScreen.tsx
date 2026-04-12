@@ -222,6 +222,25 @@ export default function WorkoutsScreen() {
           />
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Thư viện bài tập</Text>
+          <TouchableOpacity
+            style={styles.libraryCard}
+            onPress={() => navigation.navigate("WorkoutTypes")}
+          >
+            <View style={styles.libraryIconBox}>
+              <Ionicons name="library-outline" size={24} color="#FF9500" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.libraryTitle}>Xem bài tập theo nhóm</Text>
+              <Text style={styles.librarySubtitle}>
+                Chọn loại workout và xem danh sách bài tập theo từng nhóm
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color="#777" />
+          </TouchableOpacity>
+        </View>
+
         <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
@@ -355,4 +374,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  libraryCard: {
+    marginHorizontal: 20,
+    borderRadius: 18,
+    padding: 14,
+    backgroundColor: "#1C1C1E",
+    borderWidth: 1,
+    borderColor: "#2C2C2E",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  libraryIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#2B1D0D",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  libraryTitle: { color: "#FFF", fontSize: 15, fontWeight: "700" },
+  librarySubtitle: { color: "#8A8A8A", fontSize: 12, marginTop: 4 },
 });

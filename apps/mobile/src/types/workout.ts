@@ -8,6 +8,8 @@ export type RootStackParamList = {
   GeneratingPlan: { onboardingProfileId: string }; // Bắt buộc truyền ID này
   Main: undefined; // Hoặc BottomTab Navigator của bạn
   WorkoutDetail: { sessionId: string };
+  WorkoutTypes: undefined;
+  WorkoutTypeWorkouts: { workoutTypeId: string; workoutTypeName?: string };
 };
 
 // --- 2. Onboarding Data (Dữ liệu từ Form) ---

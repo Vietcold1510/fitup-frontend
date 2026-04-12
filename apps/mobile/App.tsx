@@ -16,6 +16,8 @@ import OnboardingScreen from "@/screens/auth/OnboardingScreen";
 import PlanDetailScreen from "@/screens/main/workouts/PlanDetailScreen";
 import GeneratingPlanScreen from "@/screens/auth/GeneratingPlanScreen";
 import WorkoutPlayerScreen from "@/screens/main/workouts/WorkoutPlayerScreen";
+import WorkoutTypesScreen from "@/screens/main/workouts/WorkoutTypesScreen";
+import WorkoutTypeWorkoutsScreen from "@/screens/main/workouts/WorkoutTypeWorkoutsScreen";
 import PtRegisterScreen from "@/screens/auth/PtRegisterScreen";
 import RegisterScreen from "@/screens/auth/RegisterScreen";
 import VerifyOtpScreen from "@/screens/auth/VerifyOtpScreen";
@@ -113,6 +115,11 @@ function RootNavigation() {
             component={GeneratingPlanScreen}
           />
           <Stack.Screen name="WorkoutPlayer" component={WorkoutPlayerScreen} />
+          <Stack.Screen name="WorkoutTypes" component={WorkoutTypesScreen} />
+          <Stack.Screen
+            name="WorkoutTypeWorkouts"
+            component={WorkoutTypeWorkoutsScreen}
+          />
           <Stack.Screen name="PremiumDetail" component={PremiumDetailScreen} />
           <Stack.Screen
             name="TransactionHistory"
