@@ -27,7 +27,9 @@ export default function ProfileScreen() {
   });
   const premiumStatus = premiumStatusRes?.data?.data;
   const isPremiumActive =
-    !!premiumStatus?.hasPremium && !!premiumStatus?.isActive;
+    !!premiumStatus?.hasPremium &&
+    !!premiumStatus?.isActive &&
+    (premiumStatus?.remainingDays ?? 0) > 0;
 
   useFocusEffect(
     React.useCallback(() => {
@@ -56,7 +58,7 @@ export default function ProfileScreen() {
                 <Text style={styles.pointAmount}>
                   {pointAmount.toLocaleString("vi-VN")}
                 </Text>
-                <Text style={styles.pointUnit}>P</Text>
+                <Text style={styles.pointUnit}>Pts</Text>
               </View>
 
               <TouchableOpacity

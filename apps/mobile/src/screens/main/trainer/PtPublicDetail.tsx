@@ -113,7 +113,7 @@ export default function PtPublicDetail({ navigation, route }: any) {
     if (pointAmount < selectedSlot.price) {
       Alert.alert(
         "Số dư không đủ",
-        `Số điểm hiện tại (${pointAmount.toLocaleString()}p) không đủ. Bạn cần nạp thêm ít nhất ${(selectedSlot.price - pointAmount).toLocaleString()}p.`,
+        `Số điểm hiện tại (${pointAmount.toLocaleString()} Pts) không đủ. Bạn cần nạp thêm ít nhất ${(selectedSlot.price - pointAmount).toLocaleString()} Pts.`,
         [
           { text: "Để sau", style: "cancel" },
           {

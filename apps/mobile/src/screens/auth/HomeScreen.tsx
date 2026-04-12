@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -37,7 +38,27 @@ export default function HomeScreen() {
 
   const premiumStatus = premiumStatusRes?.data?.data;
   const isPremiumActive =
-    !!premiumStatus?.hasPremium && !!premiumStatus?.isActive;
+    !!premiumStatus?.hasPremium &&
+    !!premiumStatus?.isActive &&
+    (premiumStatus?.remainingDays ?? 0) > 0;
+
+  const redirectPremiumWithAlert = () => {
+    navigation.navigate("Premium");
+    setTimeout(() => {
+      Alert.alert(
+        "Yêu cầu Premium",
+        "Tính năng này chỉ dành cho tài khoản Premium. Vui lòng mua gói Premium để tiếp tục.",
+      );
+    }, 120);
+  };
+
+  const handlePremiumFeaturePress = (targetScreen: string) => {
+    if (!isPremiumActive) {
+      redirectPremiumWithAlert();
+      return;
+    }
+    navigation.navigate(targetScreen);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -67,13 +88,13 @@ export default function HomeScreen() {
               <Ionicons
                 name={isPremiumActive ? "diamond" : "diamond-outline"}
                 size={15}
-                color="#AF52DE"
+                color="#FF9500"
               />
               <Text style={styles.metaLabel}>Premium</Text>
               <Text style={styles.metaValue}>
                 {isPremiumActive
                   ? `${premiumStatus?.remainingDays ?? 0} ngày`
-                  : "Chua kich hoat"}
+                  : "Chưa kích hoạt"}
               </Text>
             </View>
 
@@ -81,7 +102,7 @@ export default function HomeScreen() {
               <Ionicons name="wallet-outline" size={15} color="#FF9500" />
               <Text style={styles.metaLabel}>Points</Text>
               <Text style={[styles.metaValue, styles.pointValue]}>
-                {pointAmount.toLocaleString("vi-VN")}P
+                {pointAmount.toLocaleString("vi-VN")} Pts
               </Text>
             </View>
           </View>
@@ -106,15 +127,13 @@ export default function HomeScreen() {
                   style={styles.todayGradient}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.todayDay}>
-                      NGAY {todaySession.dayNumber}
-                    </Text>
+                    <Text style={styles.todayDay}>NGÀY {todaySession.dayNumber}</Text>
                     <Text style={styles.todayTitle} numberOfLines={1}>
-                      {todaySession.notes || "San sang but pha"}
+                      {todaySession.notes || "Sẵn sàng bứt phá"}
                     </Text>
                     <Text style={styles.todayInfo}>
                       <Ionicons name="stats-chart" size={12} />{" "}
-                      {todaySession.exerciseCount || 0} bai tap
+                      {todaySession.exerciseCount || 0} bài tập
                     </Text>
                   </View>
                   <Ionicons name="play-circle" size={54} color="#FFF" />
@@ -122,48 +141,119 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ) : (
               <View style={styles.emptyToday}>
-                <Text style={styles.emptyTodayText}>
-                  Hôm nay là ngày nghỉ ngơi.
-                </Text>
+                <Text style={styles.emptyTodayText}>Hôm nay là ngày nghỉ ngơi.</Text>
               </View>
             )}
           </View>
 
-          <TouchableOpacity
-            style={styles.workoutShortcut}
-            onPress={() => navigation.navigate("Workouts")}
-          >
-            <View style={styles.actionIcon}>
-              <Ionicons name="barbell-outline" size={18} color="#FF9500" />
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Đi tới Workouts</Text>
-              <Text style={styles.actionSub}>
-                Mục tiêu hôm nay và lộ trình của bạn
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#FF9500" />
-          </TouchableOpacity>
+          {!isPremiumActive && (
+            <LinearGradient
+              colors={["#FFB347", "#FF9500", "#D97706"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.premiumCard}
+            >
+              <View style={styles.premiumHead}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.premiumTitle}>Nâng cấp Premium</Text>
+                  <Text style={styles.premiumSub}>
+                    Mở khóa toàn bộ tính năng và huấn luyện AI
+                  </Text>
+                </View>
+                <Ionicons name="diamond" size={22} color="#FFF" />
+              </View>
 
-          <TouchableOpacity
-            style={styles.aiShortcut}
-            onPress={() => navigation.navigate("AiChatConversations")}
+              <View style={styles.premiumList}>
+                <View style={styles.premiumItem}>
+                  <Ionicons name="checkmark" size={16} color="#FFF" />
+                  <Text style={styles.premiumItemText}>AI Chat không giới hạn</Text>
+                </View>
+                <View style={styles.premiumItem}>
+                  <Ionicons name="checkmark" size={16} color="#FFF" />
+                  <Text style={styles.premiumItemText}>Tạo trình tập luyện nâng cao</Text>
+                </View>
+                <View style={styles.premiumItem}>
+                  <Ionicons name="checkmark" size={16} color="#FFF" />
+                  <Text style={styles.premiumItemText}>Ưu tiên hỗ trợ từ hệ thống AI</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={styles.premiumBtn}
+                onPress={() => navigation.navigate("Premium")}
+              >
+                <Text style={styles.premiumBtnText}>Xem gói Premium</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          )}
+
+          <Text
+            style={[
+              styles.sectionTitle,
+              isPremiumActive
+                ? styles.quickFeatureTitleWhenHasPremium
+                : styles.quickFeatureTitle,
+            ]}
           >
-            <View style={styles.aiIcon}>
-              <Ionicons
-                name="chatbubble-ellipses-outline"
-                size={18}
-                color="#0A84FF"
-              />
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>AI Chat</Text>
-              <Text style={styles.actionSub}>
-                Giải đáp thắc mắc của bạn với trợ lý AI
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#0A84FF" />
-          </TouchableOpacity>
+            Tính năng nhanh
+          </Text>
+          <View style={styles.featureGrid}>
+            <TouchableOpacity
+              style={styles.featureCard}
+              onPress={() => navigation.navigate("WorkoutTypes")}
+            >
+              <View style={styles.featureIconWrap}>
+                <Ionicons name="play" size={18} color="#FF9500" />
+              </View>
+              <Text style={styles.featureTitle}>Thư viện bài tập</Text>
+              <Text style={styles.featureSub}>Xem danh sách bài tập theo nhóm</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.featureCard}
+              onPress={() => handlePremiumFeaturePress("Workouts")}
+            >
+              {!isPremiumActive && (
+                <View style={styles.premiumTagTopRight}>
+                  <Ionicons name="diamond" size={10} color="#111" />
+                  <Text style={styles.premiumTagText}>Premium</Text>
+                </View>
+              )}
+              <View style={styles.featureIconWrap}>
+                <Ionicons name="barbell-outline" size={18} color="#FFB347" />
+              </View>
+              <Text style={styles.featureTitle}>Lộ trình tập luyện</Text>
+              <Text style={styles.featureSub}>Theo dõi mục tiêu và tiến độ tập</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.featureCard}
+              onPress={() => handlePremiumFeaturePress("AiChatConversations")}
+            >
+              {!isPremiumActive && (
+                <View style={styles.premiumTagTopRight}>
+                  <Ionicons name="diamond" size={10} color="#111" />
+                  <Text style={styles.premiumTagText}>Premium</Text>
+                </View>
+              )}
+              <View style={styles.featureIconWrap}>
+                <Ionicons name="sparkles-outline" size={18} color="#FF9500" />
+              </View>
+              <Text style={styles.featureTitle}>AI Chat</Text>
+              <Text style={styles.featureSub}>Hỏi đáp và tư vấn luyện tập cùng AI</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.featureCard}
+              onPress={() => navigation.navigate("Trainers")}
+            >
+              <View style={styles.featureIconWrap}>
+                <Ionicons name="people-outline" size={18} color="#FF9500" />
+              </View>
+              <Text style={styles.featureTitle}>Book PT</Text>
+              <Text style={styles.featureSub}>Đặt lịch tập cùng huấn luyện viên</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -217,8 +307,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: "#FFF",
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "800",
     marginBottom: 15,
+  },
+  quickFeatureTitle: {
+    marginTop: 20,
+  },
+  quickFeatureTitleWhenHasPremium: {
+    marginTop: 10,
   },
   todayLoading: {
     backgroundColor: "#1C1C1E",
@@ -261,55 +357,110 @@ const styles = StyleSheet.create({
     borderColor: "#2C2C2E",
   },
   emptyTodayText: { color: "#666", fontSize: 14 },
-  workoutShortcut: {
-    marginTop: 14,
-    backgroundColor: "#1C1C1E",
+
+  premiumCard: {
+    marginTop: 22,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#FF950044",
-    padding: 16,
+    padding: 18,
+  },
+  premiumHead: {
     flexDirection: "row",
-    alignItems: "center",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
-  aiShortcut: {
-    marginTop: 12,
-    backgroundColor: "#1C1C1E",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#0A84FF44",
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  actionIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "#FF950014",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  aiIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "#0A84FF14",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  actionContent: {
-    flex: 1,
-    marginLeft: 12,
-    marginRight: 8,
-  },
-  actionTitle: {
+  premiumTitle: {
     color: "#FFF",
-    fontSize: 15,
+    fontSize: 30,
+    fontWeight: "900",
+  },
+  premiumSub: {
+    color: "#1F1F1F",
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: "700",
+    opacity: 0.9,
+  },
+  premiumList: {
+    marginTop: 14,
+    gap: 8,
+  },
+  premiumItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  premiumItemText: {
+    color: "#111",
+    marginLeft: 8,
+    fontSize: 14,
     fontWeight: "800",
   },
-  actionSub: {
-    color: "#8F8F8F",
-    fontSize: 12,
-    marginTop: 4,
+  premiumBtn: {
+    marginTop: 16,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  premiumBtnText: {
+    color: "#222",
+    fontSize: 18,
+    fontWeight: "900",
+  },
+
+  featureGrid: {
+    marginTop: 8,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  featureCard: {
+    width: "48.5%",
+    backgroundColor: "#1C1C1E",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#2C2C2E",
+    padding: 14,
+    marginBottom: 12,
+    minHeight: 165,
+    position: "relative",
+  },
+  featureIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "#261C12",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  featureTitle: {
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "800",
+    lineHeight: 24,
+    marginBottom: 6,
+    flexShrink: 1,
+  },
+  featureSub: {
+    color: "#A8A8A8",
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  premiumTagTopRight: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: "#FF9500",
+    borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  premiumTagText: {
+    color: "#111",
+    fontSize: 10,
+    fontWeight: "800",
+    marginLeft: 4,
   },
 });

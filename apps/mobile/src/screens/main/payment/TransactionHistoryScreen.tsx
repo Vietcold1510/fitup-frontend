@@ -19,7 +19,7 @@ export default function TransactionHistoryScreen({ navigation }: any) {
     queryKey: ["payment-history"],
     queryFn: servicePaymentRequest.getMyHistory,
   });
-  const formatPoints = (amount: number) => `${amount.toLocaleString("vi-VN")}P`;
+  const formatPoints = (amount: number) => `${amount.toLocaleString("vi-VN")} Pts`;
 
   const getStatusInfo = (status: PaymentStatus) => {
     switch (status) {

@@ -63,7 +63,7 @@ export default function TopUpPointScreen() {
       return;
     }
 
-    // Tiền VNĐ = Số điểm còn thiếu * Tỉ giá (Ví dụ: 1 Pt = 1000 VNĐ)
+    // Tiền VNĐ = Số điểm còn thiếu * Tỉ giá (Ví dụ: 1 Pts = 1000 VNĐ)
     const vndNeeded = pointsNeeded * (topupRate?.rate || 1);
     setAmount(vndNeeded.toString());
   };
@@ -120,7 +120,7 @@ export default function TopUpPointScreen() {
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Số dư hiện tại</Text>
           <Text style={styles.balanceValue}>
-            {pointAmount.toLocaleString()}P
+            {pointAmount.toLocaleString()} Pts
           </Text>
         </View>
 
@@ -147,7 +147,7 @@ export default function TopUpPointScreen() {
                   {plan.describe}
                 </Text>
                 <Text style={styles.planPriceLabel}>
-                  {plan.price.toLocaleString()}P
+                  {plan.price.toLocaleString()} Pts
                 </Text>
               </TouchableOpacity>
             ))
@@ -191,14 +191,14 @@ export default function TopUpPointScreen() {
             <View style={styles.summaryRow}>
               <Text style={styles.infoText}>Điểm nạp thêm:</Text>
               <Text style={styles.infoValue}>
-                + {calculatedPoints.toLocaleString()}P
+                + {calculatedPoints.toLocaleString()} Pts
               </Text>
             </View>
 
             <View style={[styles.summaryRow, styles.totalRow]}>
               <Text style={styles.totalLabel}>Tổng điểm sau nạp:</Text>
               <Text style={styles.totalValue}>
-                {totalAfterTopup.toLocaleString()}P
+                {totalAfterTopup.toLocaleString()} Pts
               </Text>
             </View>
           </View>

@@ -16,7 +16,7 @@ import { PaymentStatus, ServiceType } from "@/utils/enum";
 
 export default function TransactionDetailScreen({ route, navigation }: any) {
   const { paymentId } = route.params || {};
-  const formatPoints = (amount: number) => `${amount.toLocaleString("vi-VN")}P`;
+  const formatPoints = (amount: number) => `${amount.toLocaleString("vi-VN")} Pts`;
 
   // 1. GỌI API CHI TIẾT
   const {

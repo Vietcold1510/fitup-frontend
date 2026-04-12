@@ -15,9 +15,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import dayjs from "dayjs";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/hooks/useWorkout";
 import { workoutPlanRequest } from "@/api/workoutPlan";
+import { premiumRequest } from "@/api/premium";
 import { GoalType } from "@/utils/enum";
 
 const { width } = Dimensions.get("window");
@@ -25,8 +26,28 @@ const { width } = Dimensions.get("window");
 export default function WorkoutsScreen() {
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
-  const { allPlans, todaySession, isLoadingPlans, isLoadingToday } =
-    useWorkout();
+  const { allPlans, todaySession, isLoadingPlans, isLoadingToday } = useWorkout();
+
+  const { data: premiumStatusRes } = useQuery({
+    queryKey: ["premium-my-status"],
+    queryFn: () => premiumRequest.getMyStatus(),
+  });
+
+  const premiumStatus = premiumStatusRes?.data?.data;
+  const isPremiumActive =
+    !!premiumStatus?.hasPremium &&
+    !!premiumStatus?.isActive &&
+    (premiumStatus?.remainingDays ?? 0) > 0;
+
+  const redirectPremiumWithAlert = () => {
+    navigation.navigate("Premium");
+    setTimeout(() => {
+      Alert.alert(
+        "Yêu cầu Premium",
+        "Tính năng này chỉ dành cho tài khoản Premium. Vui lòng mua gói Premium để tiếp tục.",
+      );
+    }, 120);
+  };
 
   const deletePlanMutation = useMutation({
     mutationFn: (id: string) => workoutPlanRequest.deletePlan(id),
@@ -40,6 +61,11 @@ export default function WorkoutsScreen() {
   });
 
   const handleConfirmDelete = (id: string) => {
+    if (!isPremiumActive) {
+      redirectPremiumWithAlert();
+      return;
+    }
+
     Alert.alert(
       "Xóa Lộ Trình",
       "Bạn có chắc chắn muốn xóa lộ trình này không? Hành động này sẽ xóa toàn bộ dữ liệu tiến độ.",
@@ -65,11 +91,7 @@ export default function WorkoutsScreen() {
       case GoalType.Maintain:
         return { label: "Duy trì", color: "#4CD964", icon: "leaf-outline" };
       default:
-        return {
-          label: "Luyện tập",
-          color: "#8E8E93",
-          icon: "fitness-outline",
-        };
+        return { label: "Luyện tập", color: "#8E8E93", icon: "fitness-outline" };
     }
   };
 
@@ -124,9 +146,7 @@ export default function WorkoutsScreen() {
             </TouchableOpacity>
           ) : (
             <View style={styles.emptyToday}>
-              <Text style={styles.emptyTodayText}>
-                Hôm nay là ngày nghỉ ngơi.
-              </Text>
+              <Text style={styles.emptyTodayText}>Hôm nay là ngày nghỉ ngơi.</Text>
             </View>
           )}
         </View>
@@ -134,92 +154,113 @@ export default function WorkoutsScreen() {
         <View style={styles.section}>
           <View style={styles.rowBetween}>
             <Text style={styles.sectionTitle}>Lộ trình của bạn</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Onboarding")}>
-              <Ionicons name="add-circle" size={28} color="#FF9500" />
-            </TouchableOpacity>
+            {isPremiumActive && (
+              <TouchableOpacity onPress={() => navigation.navigate("Onboarding")}>
+                <Ionicons name="add-circle" size={28} color="#FF9500" />
+              </TouchableOpacity>
+            )}
           </View>
 
-          <FlatList
-            data={allPlans}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingLeft: 20, paddingRight: 20 }}
-            renderItem={({ item }) => {
-              const goalStyle = getGoalStyle(item.goalType);
-              const start = dayjs(item.startDate).format("DD/MM");
-              const end = dayjs(item.endDate).format("DD/MM");
+          <View style={styles.planListWrap}>
+            <View style={!isPremiumActive ? styles.dimmedContent : undefined}>
+              <FlatList
+                data={allPlans}
+                horizontal
+                scrollEnabled={isPremiumActive}
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={{ paddingLeft: 20, paddingRight: 20 }}
+                renderItem={({ item }) => {
+                  const goalStyle = getGoalStyle(item.goalType);
+                  const start = dayjs(item.startDate).format("DD/MM");
+                  const end = dayjs(item.endDate).format("DD/MM");
 
-              return (
-                <TouchableOpacity
-                  style={styles.planCard}
-                  onPress={() =>
-                    navigation.navigate("PlanDetail", { planId: item.id })
-                  }
-                >
-                  <View style={styles.cardHeader}>
-                    <View
-                      style={[
-                        styles.badge,
-                        { backgroundColor: goalStyle.color + "20" },
-                      ]}
-                    >
-                      <Ionicons
-                        name={goalStyle.icon as any}
-                        size={12}
-                        color={goalStyle.color}
-                      />
-                      <Text
-                        style={[styles.badgeText, { color: goalStyle.color }]}
-                      >
-                        {goalStyle.label}
-                      </Text>
-                    </View>
-
+                  return (
                     <TouchableOpacity
-                      style={styles.deleteBtn}
-                      onPress={() => handleConfirmDelete(item.id)}
-                      disabled={deletePlanMutation.isPending}
+                      style={styles.planCard}
+                      onPress={() => {
+                        if (!isPremiumActive) {
+                          redirectPremiumWithAlert();
+                          return;
+                        }
+                        navigation.navigate("PlanDetail", { planId: item.id });
+                      }}
                     >
-                      <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                      <View style={styles.cardHeader}>
+                        <View
+                          style={[
+                            styles.badge,
+                            { backgroundColor: `${goalStyle.color}20` },
+                          ]}
+                        >
+                          <Ionicons
+                            name={goalStyle.icon as any}
+                            size={12}
+                            color={goalStyle.color}
+                          />
+                          <Text style={[styles.badgeText, { color: goalStyle.color }]}>
+                            {goalStyle.label}
+                          </Text>
+                        </View>
+
+                        <TouchableOpacity
+                          style={styles.deleteBtn}
+                          onPress={() => handleConfirmDelete(item.id)}
+                          disabled={deletePlanMutation.isPending}
+                        >
+                          <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={styles.statsRow}>
+                        <Text style={styles.progressValue}>{item.progress || 0}%</Text>
+                        <Text style={styles.sessionCount}>{item.totalSessions} buổi</Text>
+                      </View>
+
+                      <View style={styles.progressBarBg}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            {
+                              width: `${item.progress || 0}%`,
+                              backgroundColor: goalStyle.color,
+                            },
+                          ]}
+                        />
+                      </View>
+
+                      <Text style={styles.durationText}>
+                        {item.totalWeeks} tuần • {start} - {end}
+                      </Text>
                     </TouchableOpacity>
-                  </View>
+                  );
+                }}
+                ListEmptyComponent={
+                  <TouchableOpacity
+                    style={styles.emptyState}
+                    onPress={() =>
+                      isPremiumActive
+                        ? navigation.navigate("Onboarding")
+                        : redirectPremiumWithAlert()
+                    }
+                  >
+                    <Ionicons name="add" size={40} color="#333" />
+                    <Text style={{ color: "#666" }}>Chưa có lộ trình nào</Text>
+                  </TouchableOpacity>
+                }
+              />
+            </View>
 
-                  <View style={styles.statsRow}>
-                    <Text style={styles.progressValue}>{item.progress || 0}%</Text>
-                    <Text style={styles.sessionCount}>
-                      {item.totalSessions} buổi
-                    </Text>
-                  </View>
-
-                  <View style={styles.progressBarBg}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        {
-                          width: `${item.progress || 0}%`,
-                          backgroundColor: goalStyle.color,
-                        },
-                      ]}
-                    />
-                  </View>
-
-                  <Text style={styles.durationText}>
-                    {item.totalWeeks} tuần • {start} - {end}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-            ListEmptyComponent={
+            {!isPremiumActive && (
               <TouchableOpacity
-                style={styles.emptyState}
-                onPress={() => navigation.navigate("Onboarding")}
+                activeOpacity={0.9}
+                style={styles.premiumOverlay}
+                onPress={redirectPremiumWithAlert}
               >
-                <Ionicons name="add" size={40} color="#333" />
-                <Text style={{ color: "#666" }}>Chưa có lộ trình nào</Text>
+                <Text style={styles.premiumOverlayText}>Tính năng Premium</Text>
               </TouchableOpacity>
-            }
-          />
+            )}
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -322,6 +363,32 @@ const styles = StyleSheet.create({
     borderColor: "#2C2C2E",
   },
   emptyTodayText: { color: "#666", fontSize: 14 },
+  planListWrap: {
+    position: "relative",
+    minHeight: 158,
+  },
+  dimmedContent: {
+    opacity: 0.32,
+  },
+  premiumOverlay: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 12,
+    right: 12,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(255,149,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  premiumOverlayText: {
+    color: "#FFB347",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 0.3,
+  },
   planCard: {
     width: 200,
     backgroundColor: "#1C1C1E",
