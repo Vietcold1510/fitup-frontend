@@ -70,7 +70,7 @@ export default function TransactionHistoryScreen({ navigation }: any) {
 
         <View style={{ alignItems: "flex-end" }}>
           <Text style={styles.amountText}>
-            -{item.amount.toLocaleString()}đ
+            -{item.amount.toLocaleString()}p
           </Text>
           <Text style={[styles.statusText, { color: status.color }]}>
             {status.label}

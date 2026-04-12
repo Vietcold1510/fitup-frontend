@@ -42,14 +42,10 @@ export default function PremiumDetailScreen() {
   });
 
   const handleFinalConfirm = () => {
-    Alert.alert(
-      "Xác nhận thanh toán",
-      "Bạn đồng ý mua gói Premium này chứ?",
-      [
-        { text: "Hủy", style: "cancel" },
-        { text: "Đồng ý", onPress: () => purchaseMutation.mutate() },
-      ],
-    );
+    Alert.alert("Xác nhận thanh toán", "Bạn đồng ý mua gói Premium này chứ?", [
+      { text: "Hủy", style: "cancel" },
+      { text: "Đồng ý", onPress: () => purchaseMutation.mutate() },
+    ]);
   };
 
   return (
@@ -69,9 +65,7 @@ export default function PremiumDetailScreen() {
         >
           <Text style={styles.planName}>{describe || "Premium Plan"}</Text>
           <Text style={styles.planMeta}>{duration || 0} ngày</Text>
-          <Text style={styles.planPrice}>
-            {(price || 0).toLocaleString()}đ
-          </Text>
+          <Text style={styles.planPrice}>{(price || 0).toLocaleString()}p</Text>
         </LinearGradient>
 
         <View style={styles.featureCard}>
@@ -152,7 +146,12 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 18,
   },
-  sectionTitle: { color: "#FFF", fontSize: 17, fontWeight: "bold", marginBottom: 10 },
+  sectionTitle: {
+    color: "#FFF",
+    fontSize: 17,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
   row: { flexDirection: "row", alignItems: "flex-start", marginBottom: 10 },
   rowText: { color: "#D0D0D0", marginLeft: 8, flex: 1, lineHeight: 20 },
   primaryBtn: {
@@ -180,4 +179,3 @@ const styles = StyleSheet.create({
   },
   confirmBtnText: { color: "#FFF", fontWeight: "bold" },
 });
-

@@ -108,7 +108,7 @@ export default function UserExploreScreen({ navigation }: any) {
 
         <View style={styles.priceRow}>
           <Text style={styles.priceValue}>
-            {item.pricePerHour.toLocaleString()}đ
+            {item.pricePerHour.toLocaleString()}p
           </Text>
           <Text style={styles.priceUnit}> /giờ</Text>
         </View>
@@ -194,7 +194,7 @@ export default function UserExploreScreen({ navigation }: any) {
             <Text style={styles.filterLabel}>Giá tối thiểu</Text>
             <View style={styles.priceValueRow}>
               <Text style={styles.priceText}>
-                {tempMinPrice.toLocaleString()}đ
+                {tempMinPrice.toLocaleString()}p
               </Text>
               <Slider
                 style={styles.slider}

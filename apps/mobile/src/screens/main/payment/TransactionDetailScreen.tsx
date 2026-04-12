@@ -90,7 +90,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
             />
           </View>
           <Text style={styles.amountText}>
-            -{detail.amount.toLocaleString()}đ
+            -{detail.amount.toLocaleString()}p
           </Text>
           <Text
             style={[
