@@ -8,7 +8,6 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
-  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,28 +15,19 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { workoutPlanRequest } from "@/api/workoutPlan";
 import { WebView } from "react-native-webview";
+import { buildLoopingVideoHtml, getWorkoutVideoSources } from "@/utils/workoutVideo";
 
 const { width } = Dimensions.get("window");
-const LOCAL_VIDEO_URI =
-  Image.resolveAssetSource(require("../../../../assets/scpd.mp4"))?.uri || "";
-
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 
 export default function WorkoutPlayerScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
 
-  // 1. LẤY PARAMS TỪ NAVIGATION
+  // 1. Get params from navigation
   const { planId, weekNumber, dayNumber, fallbackData } = route.params || {};
 
-  // 2. FETCH DỮ LIỆU CHI TIẾT BUỔI TẬP
+  // 2. Fetch detail data for this workout day
   const { data: dayDetailRes, isLoading } = useQuery({
     queryKey: ["day-detail", planId, weekNumber, dayNumber],
     queryFn: () =>
@@ -50,7 +40,7 @@ export default function WorkoutPlayerScreen() {
     return freshExercises || fallbackData?.exercises || [];
   }, [dayDetailRes, fallbackData]);
 
-  // 3. STATE QUẢN LÝ TẬP LUYỆN
+  // 3. Workout state
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isActive, setIsActive] = useState(false);
@@ -58,49 +48,13 @@ export default function WorkoutPlayerScreen() {
 
   const currentEx = exercises[currentIndex];
   const isTimerEx = !!currentEx?.durationSeconds;
-  const resolvedWorkoutVideoUrl = LOCAL_VIDEO_URI;
+  const workoutVideoSources = useMemo(() => getWorkoutVideoSources(), []);
   const workoutVideoHtml = useMemo(
-    () => `
-      <!doctype html>
-      <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-          <style>
-            html, body {
-              margin: 0;
-              padding: 0;
-              width: 100%;
-              height: 100%;
-              background: #121212;
-              overflow: hidden;
-            }
-            .wrap {
-              width: 100%;
-              height: 100%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              background: #121212;
-            }
-            video {
-              width: 100%;
-              height: 100%;
-              background: #000;
-              pointer-events: none;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="wrap">
-            <video autoplay loop muted playsinline webkit-playsinline preload="auto" src="${escapeHtml(resolvedWorkoutVideoUrl)}"></video>
-          </div>
-        </body>
-      </html>
-    `,
-    [resolvedWorkoutVideoUrl],
+    () => buildLoopingVideoHtml(workoutVideoSources),
+    [workoutVideoSources],
   );
 
-  // 4. MUTATION CẬP NHẬT TRẠNG THÁI (DONE/SKIP)
+  // 4. Update status (done/skip)
   const updateStatusMutation = useMutation({
     mutationFn: ({
       exerciseId,
@@ -112,7 +66,7 @@ export default function WorkoutPlayerScreen() {
       return workoutPlanRequest.updateExerciseStatus(exerciseId, { isDone });
     },
     onSuccess: () => {
-      // Refresh lại dữ liệu ngày để cập nhật trạng thái isDone lên UI
+      // Refresh queries to reflect updated done state
       queryClient.invalidateQueries({
         queryKey: ["day-detail", planId, weekNumber, dayNumber],
       });
@@ -120,7 +74,7 @@ export default function WorkoutPlayerScreen() {
     },
   });
 
-  // 5. RESET KHI ĐỔI BÀI
+  // 5. Reset when exercise changes
   useEffect(() => {
     if (!currentEx) return;
     if (isTimerEx) {
@@ -132,18 +86,18 @@ export default function WorkoutPlayerScreen() {
     setIsActive(false);
   }, [currentIndex, currentEx]);
 
-  // 6. LOGIC ĐẾM NGƯỢC
+  // 6. Countdown logic
   useEffect(() => {
     let interval: any = null;
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     } else if (timeLeft === 0 && isTimerEx && isActive) {
-      handleNext(true); // Hết giờ tự động coi là Hoàn thành
+      handleNext(true); // Auto-complete when timer ends
     }
     return () => clearInterval(interval);
   }, [isActive, timeLeft]);
 
-  // 7. XỬ LÝ CHUYỂN BÀI
+  // 7. Next exercise flow
   const handleNext = async (isFinished: boolean) => {
     setIsActive(false);
     const currentExerciseId = currentEx?.id;
@@ -155,15 +109,15 @@ export default function WorkoutPlayerScreen() {
           isDone: isFinished,
         });
       } catch (e) {
-        console.log("⚠️ Không thể cập nhật trạng thái, chuyển bài tiếp.");
+        console.log("Cannot update status, continue to next exercise.");
       }
     }
 
     if (currentIndex < exercises.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      Alert.alert("Tuyệt vời!", "Bạn đã hoàn thành buổi tập hôm nay! 🔥", [
-        { text: "Về lộ trình", onPress: () => navigation.goBack() },
+      Alert.alert("Tuyet voi!", "Ban da hoan thanh buoi tap hom nay!", [
+        { text: "Ve lo trinh", onPress: () => navigation.goBack() },
       ]);
     }
   };
@@ -195,7 +149,7 @@ export default function WorkoutPlayerScreen() {
           <Ionicons name="close" size={28} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          BÀI {currentIndex + 1} / {exercises.length}
+          BAI {currentIndex + 1} / {exercises.length}
         </Text>
         <TouchableOpacity>
           <Ionicons name="help-circle-outline" size={24} color="#555" />
@@ -208,21 +162,27 @@ export default function WorkoutPlayerScreen() {
       >
         {/* MEDIA SECTION */}
         <View style={styles.mediaBox}>
-          <WebView
-            pointerEvents="none"
-            source={{ html: workoutVideoHtml, baseUrl: "" }}
-            style={styles.videoWebView}
-            originWhitelist={["*"]}
-            allowFileAccess
-            allowFileAccessFromFileURLs
-            allowUniversalAccessFromFileURLs
-            javaScriptEnabled
-            domStorageEnabled
-            allowsInlineMediaPlayback
-            mediaPlaybackRequiresUserAction={false}
-            scrollEnabled={false}
-            bounces={false}
-          />
+          {workoutVideoSources.length > 0 ? (
+            <WebView
+              pointerEvents="none"
+              source={{ html: workoutVideoHtml }}
+              style={styles.videoWebView}
+              originWhitelist={["*"]}
+              allowFileAccess
+              allowFileAccessFromFileURLs
+              allowUniversalAccessFromFileURLs
+              javaScriptEnabled
+              domStorageEnabled
+              allowsInlineMediaPlayback
+              mediaPlaybackRequiresUserAction={false}
+              scrollEnabled={false}
+              bounces={false}
+            />
+          ) : (
+            <View style={styles.videoFallback}>
+              <Text style={styles.videoFallbackText}>Khong tai duoc video bai tap.</Text>
+            </View>
+          )}
         </View>
 
         {/* INFO SECTION */}
@@ -231,7 +191,7 @@ export default function WorkoutPlayerScreen() {
           <Text style={styles.exDesc}>{currentEx.workout?.describe}</Text>
           {currentEx.note && (
             <View style={styles.badgeNote}>
-              <Text style={styles.noteText}>💡 {currentEx.note}</Text>
+              <Text style={styles.noteText}>Note: {currentEx.note}</Text>
             </View>
           )}
         </View>
@@ -239,22 +199,22 @@ export default function WorkoutPlayerScreen() {
         {/* CONTROL CENTER */}
         <View style={styles.controlCenter}>
           {currentEx.isDone ? (
-            // VIEW KHI ĐÃ XONG (DẤU V TÍCH)
+            // Completed view
             <View style={styles.completedWrapper}>
               <View style={styles.successCircle}>
                 <Ionicons name="checkmark-sharp" size={60} color="#4CD964" />
               </View>
-              <Text style={styles.completedTitle}>HOÀN THÀNH</Text>
+              <Text style={styles.completedTitle}>HOAN THANH</Text>
               <TouchableOpacity
                 style={styles.nextBtn}
                 onPress={() => handleNext(true)}
               >
-                <Text style={styles.nextBtnText}>TIẾP TỤC</Text>
+                <Text style={styles.nextBtnText}>TIEP TUC</Text>
                 <Ionicons name="arrow-forward" size={18} color="#FF9500" />
               </TouchableOpacity>
             </View>
           ) : isTimerEx ? (
-            // VIEW ĐẾM NGƯỢC
+            // Timer view
             <View style={styles.timerWrapper}>
               <Text style={styles.bigNumber}>{timeLeft}s</Text>
               <TouchableOpacity
@@ -269,17 +229,17 @@ export default function WorkoutPlayerScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            // VIEW THEO HIỆP
+            // Sets view
             <View style={styles.setsWrapper}>
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>HIỆP</Text>
+                  <Text style={styles.statLabel}>HIEP</Text>
                   <Text style={styles.statValue}>
                     {currentSet}/{currentEx.sets}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>LẦN (REPS)</Text>
+                  <Text style={styles.statLabel}>LAN (REPS)</Text>
                   <Text style={styles.statValue}>{currentEx.reps}</Text>
                 </View>
               </View>
@@ -294,7 +254,7 @@ export default function WorkoutPlayerScreen() {
                 {updateStatusMutation.isPending ? (
                   <ActivityIndicator color="#000" />
                 ) : (
-                  <Text style={styles.doneBtnText}>XONG HIỆP {currentSet}</Text>
+                  <Text style={styles.doneBtnText}>XONG HIEP {currentSet}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -315,8 +275,8 @@ export default function WorkoutPlayerScreen() {
           >
             <Text style={styles.skipText}>
               {currentIndex === exercises.length - 1
-                ? "HOÀN THÀNH BUỔI TẬP"
-                : "BỎ QUA BÀI NÀY"}
+                ? "HOAN THANH BUOI TAP"
+                : "BO QUA BAI NAY"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -343,6 +303,8 @@ const styles = StyleSheet.create({
 
   mediaBox: { width: width, height: 260, backgroundColor: "#1C1C1E" },
   videoWebView: { width: "100%", height: "100%", backgroundColor: "#1C1C1E" },
+  videoFallback: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center" },
+  videoFallbackText: { color: "#8E8E93", fontSize: 13 },
 
   infoBox: { paddingHorizontal: 30, alignItems: "center", marginTop: 10 },
   exName: {
@@ -374,7 +336,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
 
-  // Styles cho trạng thái hoàn thành
+  // Completed state styles
   completedWrapper: { alignItems: "center" },
   successCircle: {
     width: 100,
@@ -454,3 +416,4 @@ const styles = StyleSheet.create({
   },
   skipText: { color: "#555", fontWeight: "bold", fontSize: 13 },
 });
+

@@ -15,8 +15,6 @@ import { workoutRequest } from "@/api/workout";
 import { Workout } from "@/schemas/workout";
 import { EquipmentType, MuscleGroup, WorkoutLevel } from "@/utils/enum";
 
-const MOCK_WORKOUT_VIDEO_PATH = "assets/scpd.mp4";
-
 const getLevelLabel = (level: number) => {
   switch (level) {
     case WorkoutLevel.Beginner:
@@ -111,7 +109,7 @@ export default function WorkoutTypeWorkoutsScreen() {
     instructionVidLink:
       typeof item.instructionVidLink === "string" && item.instructionVidLink.trim().length > 0
         ? item.instructionVidLink
-        : MOCK_WORKOUT_VIDEO_PATH,
+        : null,
   }));
 
   if (!workoutTypeId) {

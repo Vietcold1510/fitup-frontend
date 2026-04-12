@@ -1,82 +1,25 @@
 import React, { useMemo } from "react";
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
+import { buildLoopingVideoHtml, getWorkoutVideoSources } from "@/utils/workoutVideo";
 
 type WorkoutVideoParams = {
   workoutName?: string;
   videoUrl?: string | null;
 };
 
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
 export default function WorkoutVideoScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { workoutName }: WorkoutVideoParams = route.params || {};
-  const localVideoAsset = Image.resolveAssetSource(require("../../../../assets/scpd.mp4"));
-  const resolvedVideoUrl = localVideoAsset?.uri || "";
+  const videoSources = useMemo(() => getWorkoutVideoSources(), []);
 
-  const html = useMemo(
-    () => `
-      <!doctype html>
-      <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-          <style>
-            html, body {
-              margin: 0;
-              padding: 0;
-              width: 100%;
-              height: 100%;
-              background: #121212;
-              overflow: hidden;
-            }
-            .wrap {
-              width: 100%;
-              height: 100%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              background: #121212;
-            }
-            video {
-              width: 100%;
-              height: 100%;
-              background: #000;
-              pointer-events: none;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="wrap">
-            <video
-              autoplay
-              loop
-              muted
-              playsinline
-              webkit-playsinline
-              preload="auto"
-              controlslist="nofullscreen nodownload noplaybackrate noremoteplayback"
-              disablepictureinpicture
-              src="${escapeHtml(resolvedVideoUrl)}"
-            ></video>
-          </div>
-        </body>
-      </html>
-    `,
-    [resolvedVideoUrl],
-  );
+  const html = useMemo(() => buildLoopingVideoHtml(videoSources), [videoSources]);
 
-  if (!resolvedVideoUrl) {
+  if (videoSources.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -106,7 +49,7 @@ export default function WorkoutVideoScreen() {
       </View>
 
       <WebView
-        source={{ html, baseUrl: "" }}
+        source={{ html }}
         originWhitelist={["*"]}
         allowFileAccess
         allowFileAccessFromFileURLs
