@@ -46,7 +46,11 @@ export default function HomeScreen() {
             style={styles.logoButton}
             onPress={() => navigation.navigate("Profile")}
           >
-            <Image source={appLogo} style={styles.headerLogo} resizeMode="contain" />
+            <Image
+              source={appLogo}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         </View>
 
@@ -70,7 +74,7 @@ export default function HomeScreen() {
               <Ionicons name="wallet-outline" size={15} color="#FF9500" />
               <Text style={styles.metaLabel}>Points</Text>
               <Text style={[styles.metaValue, styles.pointValue]}>
-                {pointAmount.toLocaleString("vi-VN")} Pts
+                {pointAmount.toLocaleString("vi-VN")}P
               </Text>
             </View>
           </View>
@@ -95,7 +99,9 @@ export default function HomeScreen() {
                   style={styles.todayGradient}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.todayDay}>NGAY {todaySession.dayNumber}</Text>
+                    <Text style={styles.todayDay}>
+                      NGAY {todaySession.dayNumber}
+                    </Text>
                     <Text style={styles.todayTitle} numberOfLines={1}>
                       {todaySession.notes || "San sang but pha"}
                     </Text>
@@ -109,7 +115,9 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ) : (
               <View style={styles.emptyToday}>
-                <Text style={styles.emptyTodayText}>Hôm nay là ngày nghỉ ngơi.</Text>
+                <Text style={styles.emptyTodayText}>
+                  Hôm nay là ngày nghỉ ngơi.
+                </Text>
               </View>
             )}
           </View>
@@ -135,12 +143,16 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate("AiChatConversations")}
           >
             <View style={styles.aiIcon}>
-              <Ionicons name="chatbubble-ellipses-outline" size={18} color="#0A84FF" />
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={18}
+                color="#0A84FF"
+              />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>AI Chat</Text>
               <Text style={styles.actionSub}>
-                 Giải đáp thắc mắc của bạn với trợ lý AI
+                Giải đáp thắc mắc của bạn với trợ lý AI
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#0A84FF" />

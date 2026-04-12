@@ -17,6 +17,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { ptPublicRequest } from "@/api/pt";
 import { bookingRequest } from "@/api/booking";
+import { usePointAmount } from "@/hooks/usePointAmount"; // 👈 Hook lấy số dư của Hàn
 
 export default function PtPublicDetail({ navigation, route }: any) {
   const { ptId } = route.params || {};
@@ -29,11 +30,13 @@ export default function PtPublicDetail({ navigation, route }: any) {
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [note, setNote] = useState("");
 
-  // Định nghĩa khoảng thời gian lấy lịch (Từ hôm nay đến 30 ngày tới)
   const START_DATE = dayjs().format("YYYY-MM-DD");
   const END_DATE = dayjs().add(30, "day").format("YYYY-MM-DD");
 
-  // 2. API: LẤY THÔNG TIN CHI TIẾT PT
+  // 2. DATA: LẤY SỐ DƯ ĐIỂM HIỆN TẠI
+  const { data: pointAmount = 0 } = usePointAmount();
+
+  // 3. API: LẤY THÔNG TIN PT & SLOTS
   const { data: ptRes, isLoading: isPtLoading } = useQuery({
     queryKey: ["pt-detail", ptId],
     queryFn: () => ptPublicRequest.getPtById(ptId),
@@ -41,7 +44,6 @@ export default function PtPublicDetail({ navigation, route }: any) {
   });
   const ptData = ptRes?.data?.data;
 
-  // 3. API: LẤY TẤT CẢ SLOT RẢNH TRONG 30 NGÀY
   const { data: slotsRes, isLoading: isSlotsLoading } = useQuery({
     queryKey: ["pt-available-slots", ptId, START_DATE, END_DATE],
     queryFn: () =>
@@ -49,9 +51,7 @@ export default function PtPublicDetail({ navigation, route }: any) {
     enabled: !!ptId,
   });
 
-  // Backend trả về mảng phẳng các slot
   const allAvailableSlots = useMemo(() => {
-    // Thử bóc tách qua nhiều cấp độ data (phòng trường hợp API thay đổi cấu trúc)
     const rawData =
       slotsRes?.data?.data?.data ||
       slotsRes?.data?.data ||
@@ -59,21 +59,15 @@ export default function PtPublicDetail({ navigation, route }: any) {
       [];
     return Array.isArray(rawData) ? rawData : [];
   }, [slotsRes]);
-  console.log("🔍 CẤU TRÚC SLOTS:", JSON.stringify(slotsRes?.data, null, 2));
-  // 4. LOGIC: TỰ ĐỘNG CHẤM LỊCH TRÊN CALENDAR
+
   const markedDates = useMemo(() => {
     const marks: any = {};
-
-    // 🛡️ CHỐT CHẶN: Nếu không phải mảng thì trả về marks rỗng ngay
     if (!Array.isArray(allAvailableSlots)) return marks;
-
     allAvailableSlots.forEach((slot: any) => {
       if (slot?.bookingDate) {
-        // Kiểm tra thêm thuộc tính tồn tại
         marks[slot.bookingDate] = { marked: true, dotColor: "#FF9500" };
       }
     });
-
     marks[selectedDate] = {
       ...marks[selectedDate],
       selected: true,
@@ -83,52 +77,81 @@ export default function PtPublicDetail({ navigation, route }: any) {
     return marks;
   }, [allAvailableSlots, selectedDate]);
 
-  // 5. LOGIC: LỌC GIỜ TẬP THEO NGÀY ĐANG CHỌN
   const dailySlots = useMemo(() => {
     if (!allAvailableSlots || !Array.isArray(allAvailableSlots)) return [];
-
     return allAvailableSlots.filter(
       (s: any) => s && s.bookingDate === selectedDate,
     );
   }, [allAvailableSlots, selectedDate]);
 
-  // 6. MUTATION: GỬI YÊU CẦU ĐẶT LỊCH
+  // 4. MUTATION: ĐẶT LỊCH
   const bookMutation = useMutation({
     mutationFn: bookingRequest.bookSlot,
     onSuccess: (res) => {
       if (res.status === 200 || res.data?.status === 200) {
-        Alert.alert(
-          "Thành công",
-          "Yêu cầu đặt lịch của bạn đã được gửi tới PT!",
-          [
-            {
-              text: "Xem lịch của tôi",
-              onPress: () => navigation.navigate("MyBookings"),
-            },
-          ],
-        );
-        // Refetch lại để mất slot vừa đặt
+        Alert.alert("Thành công", "Yêu cầu đặt lịch đã được gửi!", [
+          {
+            text: "Xem lịch",
+            onPress: () => navigation.navigate("MyBookings"),
+          },
+        ]);
         queryClient.invalidateQueries({ queryKey: ["pt-available-slots"] });
+        queryClient.invalidateQueries({ queryKey: ["point-amount"] }); // Reset số dư
       }
     },
     onError: (err: any) => {
-      Alert.alert(
-        "Lỗi",
-        err.response?.data?.msg || "Không thể đặt lịch lúc này.",
-      );
+      Alert.alert("Lỗi", err.response?.data?.msg || "Không thể đặt lịch.");
     },
   });
+
+  // 5. LOGIC KIỂM TRA SỐ DƯ TRƯỚC KHI ĐẶT
+  const handleBookingPress = () => {
+    if (!selectedSlot) return;
+
+    // Kiểm tra số dư
+    const neededAmount = selectedSlot.price - pointAmount;
+    if (pointAmount < selectedSlot.price) {
+      Alert.alert(
+        "Số dư không đủ",
+        `Số điểm hiện tại (${pointAmount.toLocaleString()}p) không đủ. Bạn cần nạp thêm ít nhất ${(selectedSlot.price - pointAmount).toLocaleString()}p.`,
+        [
+          { text: "Để sau", style: "cancel" },
+          {
+            text: "Nạp thêm",
+            onPress: () =>
+              navigation.navigate("TopUpPoint", {
+                suggestedAmount: neededAmount, // 🚀 Truyền số tiền cần nạp sang
+              }),
+          },
+        ],
+      );
+      return;
+    }
+
+    // Nếu đủ điểm -> Xác nhận cuối
+    Alert.alert(
+      "Xác nhận đặt lịch",
+      "Bạn đồng ý thanh toán cho buổi tập này chứ?",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Đồng ý",
+          onPress: () =>
+            bookMutation.mutate({ slotForBookingId: selectedSlot.id, note }),
+        },
+      ],
+    );
+  };
 
   if (!ptId)
     return (
       <View style={styles.center}>
-        <Text style={{ color: "#FFF" }}>Không tìm thấy thông tin PT</Text>
+        <Text style={{ color: "#FFF" }}>Không tìm thấy PT</Text>
       </View>
     );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
       <View style={styles.navHeader}>
         <TouchableOpacity
           style={styles.backBtn}
@@ -141,7 +164,6 @@ export default function PtPublicDetail({ navigation, route }: any) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* THÔNG TIN PT */}
         {isPtLoading ? (
           <ActivityIndicator color="#FF9500" style={{ marginTop: 20 }} />
         ) : (
@@ -161,7 +183,6 @@ export default function PtPublicDetail({ navigation, route }: any) {
           </View>
         )}
 
-        {/* LỊCH TRÌNH */}
         <View style={styles.calendarCard}>
           <Calendar
             theme={calendarTheme}
@@ -169,13 +190,12 @@ export default function PtPublicDetail({ navigation, route }: any) {
             maxDate={END_DATE}
             onDayPress={(day) => {
               setSelectedDate(day.dateString);
-              setSelectedSlot(null); // Reset slot khi đổi ngày
+              setSelectedSlot(null);
             }}
             markedDates={markedDates}
           />
         </View>
 
-        {/* CHỌN GIỜ TẬP */}
         <View style={styles.section}>
           <View style={styles.rowBetween}>
             <Text style={styles.sectionTitle}>Giờ tập trống</Text>
@@ -228,7 +248,6 @@ export default function PtPublicDetail({ navigation, route }: any) {
           )}
         </View>
 
-        {/* GHI CHÚ */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ghi chú cho PT</Text>
           <TextInput
@@ -241,16 +260,12 @@ export default function PtPublicDetail({ navigation, route }: any) {
           />
         </View>
 
-        {/* NÚT XÁC NHẬN */}
         <TouchableOpacity
           style={[
             styles.bookBtn,
             !selectedSlot && { opacity: 0.5, backgroundColor: "#333" },
           ]}
-          onPress={() =>
-            selectedSlot &&
-            bookMutation.mutate({ slotForBookingId: selectedSlot.id, note })
-          }
+          onPress={handleBookingPress}
           disabled={bookMutation.isPending || !selectedSlot}
         >
           {bookMutation.isPending ? (

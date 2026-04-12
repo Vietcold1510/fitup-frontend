@@ -39,11 +39,36 @@ export default function ProfileScreen() {
                 <Ionicons name="wallet-outline" size={16} color="#FF9500" />
                 <Text style={styles.pointTitle}>Điểm của bạn</Text>
               </View>
-              <Text style={styles.pointCaption}>Point balance</Text>
+
+              {/* 🚀 NÚT LỊCH SỬ MỚI THÊM Ở ĐÂY */}
+              <TouchableOpacity
+                style={styles.historyBtnSmall}
+                onPress={() => navigation.navigate("TopUpHistory")}
+              >
+                <Text style={styles.historyBtnText}>Lịch sử nạp</Text>
+                <Ionicons name="chevron-forward" size={12} color="#8F8F8F" />
+              </TouchableOpacity>
             </View>
-            <Text style={styles.pointAmount}>
-              {pointAmount.toLocaleString("vi-VN")} Pts
-            </Text>
+
+            <View style={styles.pointMainRow}>
+              <View style={styles.pointAmountGroup}>
+                <Text style={styles.pointAmount}>
+                  {pointAmount.toLocaleString("vi-VN")}
+                </Text>
+                <Text style={styles.pointUnit}>P</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.rechargeBtnBig}
+                onPress={() => {
+                  console.log("🚀 Đang nhấn nút Nạp Thêm");
+                  navigation.navigate("TopUpPoint");
+                }}
+              >
+                <Ionicons name="add-circle" size={18} color="#121212" />
+                <Text style={styles.rechargeBtnTextBig}>Nạp thêm</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -171,27 +196,81 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#2C2C2E",
-    padding: 16,
+    padding: 20,
     marginBottom: 18,
   },
   pointHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 12,
   },
   pointTitleRow: { flexDirection: "row", alignItems: "center" },
   pointTitle: {
-    color: "#FFF",
-    fontWeight: "bold",
-    fontSize: 16,
+    color: "#8F8F8F",
+    fontWeight: "600",
+    fontSize: 14,
     marginLeft: 6,
   },
-  pointCaption: { color: "#8F8F8F", fontSize: 11 },
+  pointCaption: { color: "#444", fontSize: 11 },
+
+  // DÒNG CHÍNH CHỨA SỐ VÀ NÚT
+  pointMainRow: {
+    flexDirection: "row",
+    justifyContent: "space-between", // Đẩy 2 đầu
+    alignItems: "center",
+  },
+  pointAmountGroup: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
   pointAmount: {
-    color: "#FF9500",
+    color: "#FFF",
     fontWeight: "900",
-    fontSize: 28,
-    marginTop: 10,
+    fontSize: 36, // To hơn một chút cho uy tín
+  },
+  pointUnit: {
+    color: "#FF9500",
+    fontWeight: "bold",
+    fontSize: 18,
+    marginLeft: 4,
+  },
+
+  // NÚT NẠP THÊM SIZE LỚN
+  rechargeBtnBig: {
+    zIndex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FF9500",
+    paddingHorizontal: 16, // To ra theo chiều ngang
+    paddingVertical: 10, // To ra theo chiều dọc
+    borderRadius: 12, // Bo góc hiện đại hơn
+    shadowColor: "#FF9500",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  rechargeBtnTextBig: {
+    color: "#121212",
+    fontWeight: "bold",
+    fontSize: 14, // Chữ to ra
+    marginLeft: 6,
+  },
+
+  historyBtnSmall: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2C2C2E",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  historyBtnText: {
+    color: "#8F8F8F",
+    fontSize: 12,
+    marginRight: 2,
+    fontWeight: "500",
   },
   premiumCard: {
     backgroundColor: "#1C1C1E",

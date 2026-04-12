@@ -19,7 +19,7 @@ export default function TransactionHistoryScreen({ navigation }: any) {
     queryKey: ["payment-history"],
     queryFn: servicePaymentRequest.getMyHistory,
   });
-  const formatPoints = (amount: number) => `${amount.toLocaleString("vi-VN")} Pts`;
+  const formatPoints = (amount: number) => `${amount.toLocaleString("vi-VN")}P`;
 
   const getStatusInfo = (status: PaymentStatus) => {
     switch (status) {
@@ -70,9 +70,7 @@ export default function TransactionHistoryScreen({ navigation }: any) {
         </View>
 
         <View style={{ alignItems: "flex-end" }}>
-          <Text style={styles.amountText}>
-            -{formatPoints(item.amount)}
-          </Text>
+          <Text style={styles.amountText}>-{formatPoints(item.amount)}</Text>
           <Text style={[styles.statusText, { color: status.color }]}>
             {status.label}
           </Text>

@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { premiumRequest } from "@/api/premium";
 import { handleErrorApi } from "@/lib/errors";
+import { usePointAmount } from "@/hooks/usePointAmount"; // 👈 Hook lấy số dư của Hàn
 
 export default function PremiumDetailScreen() {
   const navigation = useNavigation<any>();
@@ -22,7 +23,11 @@ export default function PremiumDetailScreen() {
   const queryClient = useQueryClient();
   const [showConfirmStep, setShowConfirmStep] = useState(false);
 
+  // Lấy dữ liệu từ route params
   const { premiumTypeId, describe, duration, price } = route.params || {};
+
+  // 1. Lấy số dư điểm hiện tại của người dùng
+  const { data: pointAmount = 0 } = usePointAmount();
 
   const purchaseMutation = useMutation({
     mutationFn: () => premiumRequest.purchase({ premiumTypeId }),
@@ -32,7 +37,9 @@ export default function PremiumDetailScreen() {
         {
           text: "OK",
           onPress: () => {
+            // Làm mới các query liên quan để cập nhật giao diện Profile
             queryClient.invalidateQueries({ queryKey: ["premium-my-status"] });
+            queryClient.invalidateQueries({ queryKey: ["point-amount"] });
             navigation.goBack();
           },
         },
@@ -42,18 +49,36 @@ export default function PremiumDetailScreen() {
   });
 
   const handleFinalConfirm = () => {
-    Alert.alert(
-      "Xác nhận thanh toán",
-      "Bạn đồng ý mua gói Premium này chứ?",
-      [
-        { text: "Hủy", style: "cancel" },
-        { text: "Đồng ý", onPress: () => purchaseMutation.mutate() },
-      ],
-    );
+    // 2. KIỂM TRA SỐ DƯ: Nếu không đủ điểm thì hiện thông báo và nút Nạp thêm
+    const neededAmount = price - pointAmount;
+    if (pointAmount < price) {
+      Alert.alert(
+        "Số dư không đủ",
+        `Số điểm hiện tại (${pointAmount.toLocaleString()}p) không đủ. Bạn cần nạp thêm ít nhất ${(price - pointAmount).toLocaleString()}p.`,
+        [
+          { text: "Hủy", style: "cancel" },
+          {
+            text: "Nạp thêm",
+            onPress: () =>
+              navigation.navigate("TopUpPoint", {
+                suggestedAmount: neededAmount, // 🚀 Truyền số tiền cần nạp sang
+              }),
+          },
+        ],
+      );
+      return;
+    }
+
+    // Nếu đủ điểm mới hiện Alert xác nhận cuối cùng
+    Alert.alert("Xác nhận thanh toán", "Bạn đồng ý mua gói Premium này chứ?", [
+      { text: "Hủy", style: "cancel" },
+      { text: "Đồng ý", onPress: () => purchaseMutation.mutate() },
+    ]);
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header giữ nguyên UI của Hàn */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color="#FFF" />
@@ -63,17 +88,17 @@ export default function PremiumDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Card hiển thị gói giữ nguyên UI của Hàn */}
         <LinearGradient
           colors={["#FFB347", "#FF9500", "#D97706"]}
           style={styles.planCard}
         >
           <Text style={styles.planName}>{describe || "Premium Plan"}</Text>
           <Text style={styles.planMeta}>{duration || 0} ngày</Text>
-          <Text style={styles.planPrice}>
-            {(price || 0).toLocaleString()}đ
-          </Text>
+          <Text style={styles.planPrice}>{(price || 0).toLocaleString()}p</Text>
         </LinearGradient>
 
+        {/* Danh sách chức năng giữ nguyên UI của Hàn */}
         <View style={styles.featureCard}>
           <Text style={styles.sectionTitle}>Chức năng nổi bật</Text>
           <View style={styles.row}>
@@ -96,6 +121,7 @@ export default function PremiumDetailScreen() {
           </View>
         </View>
 
+        {/* Logic hiển thị nút và bước xác nhận */}
         {!showConfirmStep ? (
           <TouchableOpacity
             style={styles.primaryBtn}
@@ -119,8 +145,16 @@ export default function PremiumDetailScreen() {
               {purchaseMutation.isPending ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={styles.confirmBtnText}>Confirm mua Premium</Text>
+                <Text style={styles.confirmBtnText}>Xác nhận mua Premium</Text>
               )}
+            </TouchableOpacity>
+
+            {/* Thêm nút Hủy để người dùng quay lại nếu đổi ý */}
+            <TouchableOpacity
+              onPress={() => setShowConfirmStep(false)}
+              style={{ marginTop: 12, alignItems: "center" }}
+            >
+              <Text style={{ color: "#8F8F8F", fontSize: 14 }}>Quay lại</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -152,7 +186,12 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 18,
   },
-  sectionTitle: { color: "#FFF", fontSize: 17, fontWeight: "bold", marginBottom: 10 },
+  sectionTitle: {
+    color: "#FFF",
+    fontSize: 17,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
   row: { flexDirection: "row", alignItems: "flex-start", marginBottom: 10 },
   rowText: { color: "#D0D0D0", marginLeft: 8, flex: 1, lineHeight: 20 },
   primaryBtn: {
@@ -180,4 +219,3 @@ const styles = StyleSheet.create({
   },
   confirmBtnText: { color: "#FFF", fontWeight: "bold" },
 });
-

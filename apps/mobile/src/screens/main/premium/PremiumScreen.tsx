@@ -66,7 +66,8 @@ export default function PremiumScreen() {
   const types: PremiumType[] = typesRes?.data?.data || [];
   const premiumStatus: MyPremiumStatus | undefined = myStatusRes?.data?.data;
   const activeEndDate = premiumStatus?.endDate;
-  const isPremiumActive = !!premiumStatus?.hasPremium && !!premiumStatus?.isActive;
+  const isPremiumActive =
+    !!premiumStatus?.hasPremium && !!premiumStatus?.isActive;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -119,15 +120,21 @@ export default function PremiumScreen() {
           <Text style={styles.featureTitle}>Bạn nhận được gì với Premium?</Text>
           <View style={styles.featureItem}>
             <Ionicons name="sparkles-outline" size={18} color="#FF9500" />
-            <Text style={styles.featureText}>Tạo workout thông minh bằng AI</Text>
+            <Text style={styles.featureText}>
+              Tạo workout thông minh bằng AI
+            </Text>
           </View>
           <View style={styles.featureItem}>
             <Ionicons name="body-outline" size={18} color="#FF9500" />
-            <Text style={styles.featureText}>AI check động tác và gợi ý sửa</Text>
+            <Text style={styles.featureText}>
+              AI check động tác và gợi ý sửa
+            </Text>
           </View>
           <View style={styles.featureItem}>
             <Ionicons name="analytics-outline" size={18} color="#FF9500" />
-            <Text style={styles.featureText}>Theo dõi tiến độ nâng cao theo tuần</Text>
+            <Text style={styles.featureText}>
+              Theo dõi tiến độ nâng cao theo tuần
+            </Text>
           </View>
         </View>
 
@@ -140,7 +147,9 @@ export default function PremiumScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.planName}>{item.describe}</Text>
                 <Text style={styles.planMeta}>{item.duration} ngày</Text>
-                <Text style={styles.planPrice}>{item.price.toLocaleString()}đ</Text>
+                <Text style={styles.planPrice}>
+                  {item.price.toLocaleString()}p
+                </Text>
               </View>
               <TouchableOpacity
                 style={styles.buyBtn}
@@ -174,7 +183,12 @@ const styles = StyleSheet.create({
   heroTop: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   heroBadge: { color: "#111", fontWeight: "800", marginLeft: 8, fontSize: 12 },
   heroTitle: { color: "#111", fontSize: 26, fontWeight: "900" },
-  heroSub: { color: "#1f1f1f", marginTop: 8, fontWeight: "600", lineHeight: 20 },
+  heroSub: {
+    color: "#1f1f1f",
+    marginTop: 8,
+    fontWeight: "600",
+    lineHeight: 20,
+  },
   statusCard: {
     backgroundColor: "#1C1C1E",
     borderRadius: 16,
