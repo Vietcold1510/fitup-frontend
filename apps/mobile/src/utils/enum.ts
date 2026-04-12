@@ -143,3 +143,12 @@ export enum ConversionRateStatus {
   Active = 0,
   Inactive = 1,
 }
+
+export enum ConversionRateType {
+  TopUp = 1,
+  Withdraw = 2,
+}
+
+export enum PaymentMethod {
+PayOS = 0,
+}

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { jwtDecode } from "jwt-decode";
 import { AuthProvider, useAuthContext } from "./src/context/AuthContext";
 
+// --- IMPORTS SCREEN ---
 import LoginScreen from "./src/screens/auth/LoginScreen";
 import MainTab from "@/navigations/MainTab";
 import PtMainTab from "@/navigations/PtMainTab";
@@ -29,9 +30,21 @@ import TransactionHistoryScreen from "@/screens/main/payment/TransactionHistoryS
 import TransactionDetailScreen from "@/screens/main/payment/TransactionDetailScreen";
 import AiChatConversationsScreen from "@/screens/main/chat/AiChatConversationsScreen";
 import AiChatDetailScreen from "@/screens/main/chat/AiChatDetailScreen";
+import TopUpPointScreen from "@/screens/main/topup/TopUpPointScreen";
+import PaymentResultScreen from "@/screens/main/topup/PaymentResultScreen"; // 👈 THÊM MỚI
+import PaymentWebViewScreen from "@/screens/main/topup/PaymentWebViewScreen";
+import TopUpHistoryScreen from "@/screens/main/topup/TopUpHistoryScreen";
 
-const MS_ROLE_KEY =
-  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+// 🛠️ CẤU HÌNH LINKING ĐỂ BẮT ĐƯỜNG DẪN fitup://payment-result
+const linking = {
+  prefixes: ["fitup://"],
+  config: {
+    screens: {
+      PaymentResult: "payment-result",
+    },
+  },
+};
+
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
 });
@@ -45,13 +58,8 @@ function RootNavigation() {
       const decoded: any = jwtDecode(token);
       const role =
         decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-
-      // 🔥 LẤY ID TỪ TRƯỜNG "sub"
       const userId = decoded["sub"];
-
-      // Cập nhật vào Context (Hàn nhớ sửa hàm login trong Context để nhận 2 tham số nhé)
       login(role, userId);
-      console.log("--- Role & UserId sent to Context ---");
     } catch (e) {
       console.error(e);
     }
@@ -60,7 +68,6 @@ function RootNavigation() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: "fade" }}>
       {!isAuthenticated ? (
-        //  NHÓM MÀN HÌNH KHI CHƯA ĐĂNG NHẬP
         <>
           <Stack.Screen name="Login">
             {(props) => (
@@ -76,10 +83,7 @@ function RootNavigation() {
           />
         </>
       ) : (
-        // BÊN TRONG FILE App.tsx
-
         <Stack.Group>
-          {/* 1. ĐƯA MAIN LÊN ĐẦU TIÊN ĐỂ LÀM MẶC ĐỊNH */}
           {userRole === "PT" ? (
             <>
               <Stack.Screen name="PtMain" component={PtMainTab} />
@@ -101,7 +105,7 @@ function RootNavigation() {
             <Stack.Screen name="Main" component={MainTab} />
           )}
 
-          {/* 2. CÁC MÀN HÌNH KHÁC ĐỂ XUỐNG DƯỚI */}
+          {/* CÁC MÀN HÌNH CHUNG CHẤP NHẬN CẢ USER & PT */}
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           <Stack.Screen name="PlanDetail" component={PlanDetailScreen} />
           <Stack.Screen
@@ -118,13 +122,23 @@ function RootNavigation() {
             name="TransactionDetail"
             component={TransactionDetailScreen}
           />
+          
           <Stack.Screen
             name="AiChatConversations"
             component={AiChatConversationsScreen}
           />
           <Stack.Screen name="AiChatDetail" component={AiChatDetailScreen} />
+          <Stack.Screen name="TopUpPoint" component={TopUpPointScreen} />
 
-          {/* 3. CÁC MÀN HÌNH PHỤ CỦA USER */}
+          {/* 👈 MÀN HÌNH KẾT QUẢ THANH TOÁN */}
+          <Stack.Screen name="PaymentResult" component={PaymentResultScreen} />
+          <Stack.Screen
+            name="PaymentWebView"
+            component={PaymentWebViewScreen}
+            options={{ title: "Thanh toán PayOS" }}
+          />
+          <Stack.Screen name="TopUpHistory" component={TopUpHistoryScreen} />
+
           {userRole !== "PT" && (
             <>
               <Stack.Screen name="PtPublicDetail" component={PtPublicDetail} />
@@ -143,7 +157,8 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SafeAreaProvider>
-          <NavigationContainer>
+          {/* 💡 THÊM linkling VÀO ĐÂY */}
+          <NavigationContainer linking={linking}>
             <RootNavigation />
           </NavigationContainer>
         </SafeAreaProvider>
