@@ -1,10 +1,9 @@
 import React, { useMemo } from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
-import { Asset } from "expo-asset";
 
 type WorkoutVideoParams = {
   workoutName?: string;
@@ -22,14 +21,9 @@ const escapeHtml = (value: string) =>
 export default function WorkoutVideoScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { workoutName, videoUrl }: WorkoutVideoParams = route.params || {};
-
-  const localAssetUri = Asset.fromModule(require("../../../../assets/scpd.mp4")).uri;
-  const isRemoteHttp = typeof videoUrl === "string" && /^https?:\/\//i.test(videoUrl.trim());
-  const resolvedVideoUrl =
-    isRemoteHttp
-      ? String(videoUrl).trim()
-      : localAssetUri;
+  const { workoutName }: WorkoutVideoParams = route.params || {};
+  const localVideoAsset = Image.resolveAssetSource(require("../../../../assets/scpd.mp4"));
+  const resolvedVideoUrl = localVideoAsset?.uri || "";
 
   const html = useMemo(
     () => `
@@ -114,6 +108,9 @@ export default function WorkoutVideoScreen() {
       <WebView
         source={{ html, baseUrl: "" }}
         originWhitelist={["*"]}
+        allowFileAccess
+        allowFileAccessFromFileURLs
+        allowUniversalAccessFromFileURLs
         javaScriptEnabled
         domStorageEnabled
         allowsInlineMediaPlayback

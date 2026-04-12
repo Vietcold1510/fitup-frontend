@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,12 +16,10 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { workoutPlanRequest } from "@/api/workoutPlan";
 import { WebView } from "react-native-webview";
-import { Asset } from "expo-asset";
 
 const { width } = Dimensions.get("window");
-const MOCK_WORKOUT_VIDEO_LOCAL_URI = Asset.fromModule(
-  require("../../../../assets/scpd.mp4"),
-).uri;
+const LOCAL_VIDEO_URI =
+  Image.resolveAssetSource(require("../../../../assets/scpd.mp4"))?.uri || "";
 
 const escapeHtml = (value: string) =>
   value
@@ -59,13 +58,7 @@ export default function WorkoutPlayerScreen() {
 
   const currentEx = exercises[currentIndex];
   const isTimerEx = !!currentEx?.durationSeconds;
-  const workoutVideoUrlRaw = currentEx?.workout?.instructionVidLink;
-  const isRemoteVideo =
-    typeof workoutVideoUrlRaw === "string" &&
-    /^https?:\/\//i.test(workoutVideoUrlRaw.trim());
-  const resolvedWorkoutVideoUrl = isRemoteVideo
-    ? workoutVideoUrlRaw.trim()
-    : MOCK_WORKOUT_VIDEO_LOCAL_URI;
+  const resolvedWorkoutVideoUrl = LOCAL_VIDEO_URI;
   const workoutVideoHtml = useMemo(
     () => `
       <!doctype html>
@@ -220,6 +213,9 @@ export default function WorkoutPlayerScreen() {
             source={{ html: workoutVideoHtml, baseUrl: "" }}
             style={styles.videoWebView}
             originWhitelist={["*"]}
+            allowFileAccess
+            allowFileAccessFromFileURLs
+            allowUniversalAccessFromFileURLs
             javaScriptEnabled
             domStorageEnabled
             allowsInlineMediaPlayback
