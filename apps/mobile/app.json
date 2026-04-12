@@ -1,38 +1,38 @@
-{
-  "expo": {
-    "name": "mobile",
-    "slug": "fitup",
-    "scheme": "fitup",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
-    "jsEngine": "hermes",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#121212"
-    },
-    "ios": {
-      "supportsTablet": true,
-      "jsEngine": "hermes"
-    },
-    "android": {
-      "package": "com.phamythanhan.fitup",
-      "usesCleartextTraffic": true,
-      "jsEngine": "hermes",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#121212"
-      },
-      "edgeToEdgeEnabled": true
-    },
-    "extra": {
-      "eas": {
-        "projectId": "e003d722-6115-48f8-9cc2-cb0cbab8d9c7"
-      }
-    },
-    "owner": "inkb12s-organization"
-  }
+﻿{
+    "expo":  {
+                 "name":  "Fitup",
+                 "slug":  "fitup",
+                 "scheme":  "fitup",
+                 "version":  "1.0.0",
+                 "orientation":  "portrait",
+                 "icon":  "./assets/Fitness_Logo__1_-removebg-preview.png",
+                 "userInterfaceStyle":  "dark",
+                 "newArchEnabled":  true,
+                 "jsEngine":  "hermes",
+                 "splash":  {
+                                "image":  "./assets/splash-icon.png",
+                                "resizeMode":  "contain",
+                                "backgroundColor":  "#121212"
+                            },
+                 "ios":  {
+                             "supportsTablet":  true,
+                             "jsEngine":  "hermes"
+                         },
+                 "android":  {
+                                 "package":  "com.phamythanhan.fitup",
+                                 "usesCleartextTraffic":  true,
+                                 "jsEngine":  "hermes",
+                                 "adaptiveIcon":  {
+                                                      "foregroundImage":  "./assets/Fitness_Logo__1_-removebg-preview.png",
+                                                      "backgroundColor":  "#121212"
+                                                  },
+                                 "edgeToEdgeEnabled":  true
+                             },
+                 "extra":  {
+                               "eas":  {
+                                           "projectId":  "e003d722-6115-48f8-9cc2-cb0cbab8d9c7"
+                                       }
+                           },
+                 "owner":  "inkb12s-organization"
+             }
 }

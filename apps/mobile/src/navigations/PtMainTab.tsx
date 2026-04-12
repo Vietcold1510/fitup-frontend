@@ -5,15 +5,25 @@ import ProfileScreen from "@/screens/main/profile/ProfileScreen";
 import { View, Text, StyleSheet } from "react-native";
 import PtScheduleScreen from "@/screens/main/pt/PtScheduleScreen";
 import PtBookingRequestsScreen from "@/screens/main/pt/PtBookingRequestsScreen";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Tab = createBottomTabNavigator();
 
 export default function PtMainTab() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarHideOnKeyboard: true,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: 58 + insets.bottom,
+            paddingBottom: Math.max(insets.bottom, 10),
+          },
+        ],
         tabBarActiveTintColor: "#FF9500",
         tabBarInactiveTintColor: "#888",
       }}
@@ -76,8 +86,7 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: "#121212",
     borderTopWidth: 0,
-    height: 70,
-    paddingBottom: 12,
+    paddingTop: 4,
   },
   badge: {
     position: "absolute",

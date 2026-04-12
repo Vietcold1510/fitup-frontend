@@ -39,7 +39,7 @@ export default function PtScheduleScreen({ navigation }: any) {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Schedule</Text>
         <TouchableOpacity

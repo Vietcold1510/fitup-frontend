@@ -119,7 +119,7 @@ export default function UserExploreScreen({ navigation }: any) {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
       {/* HEADER SECTION */}
       <View style={styles.header}>
         <View style={styles.titleRow}>

@@ -175,8 +175,13 @@ export default function PremiumScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: 88 },
+        ]}
+      >
         <LinearGradient
           colors={["#FFB347", "#FF9500", "#D97706"]}
           start={{ x: 0, y: 0 }}
@@ -280,7 +285,12 @@ export default function PremiumScreen() {
           </>
         )}
       </ScrollView>
-      <View style={styles.checkoutSticky}>
+      <View
+        style={[
+          styles.checkoutSticky,
+          { bottom: 0, paddingBottom: 8 },
+        ]}
+      >
         <TouchableOpacity
           style={[styles.checkoutBtn, !selectedType && { opacity: 0.5 }]}
           disabled={!selectedType}
@@ -415,11 +425,10 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
+    paddingTop: 6,
+    paddingBottom: 8,
     backgroundColor: "#121212",
-    borderTopWidth: 1,
-    borderTopColor: "#232323",
+    borderTopWidth: 0,
   },
   checkoutBtn: {
     backgroundColor: "#FF9500",

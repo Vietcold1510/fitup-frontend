@@ -1,6 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Import các màn hình (Hàn có thể tạo file trống cho các màn chưa có)
 import HomeScreen from "@/screens/auth/HomeScreen";
@@ -11,15 +12,19 @@ import WorkoutsScreen from "@/screens/main/workouts/WorkoutsScreen";
 const Tab = createBottomTabNavigator();
 
 export default function MainTab() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           backgroundColor: "#1A1A1A",
           borderTopWidth: 0,
-          height: 70,
-          paddingBottom: 10,
+          height: 58 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 10),
+          paddingTop: 4,
         },
         tabBarActiveTintColor: "#FF9500",
         tabBarInactiveTintColor: "#8E8E93",
@@ -42,7 +47,11 @@ export default function MainTab() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Workouts" component={WorkoutsScreen} />
-      <Tab.Screen name="Premium" component={PremiumScreen} />
+      <Tab.Screen
+        name="Premium"
+        component={PremiumScreen}
+        options={{ unmountOnBlur: true }}
+      />
       <Tab.Screen name="Trainers" component={UserExploreScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

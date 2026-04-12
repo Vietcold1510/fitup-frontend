@@ -51,7 +51,7 @@ const MOCK_REQUESTS = [
 
 export default function PtBookingRequestsScreen() {
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Booking Requests</Text>
