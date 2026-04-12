@@ -7,23 +7,24 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthInput } from "../../components/auth/AuthInput";
 import { useLoginScreen } from "./useLoginScreen";
 
-// 1. Định nghĩa Interface Props để tránh lỗi IntrinsicAttributes
 interface LoginScreenProps {
   onLoginSuccess: (token: string) => void;
   navigation: any;
   route: any;
 }
 
+const appLogo = require("../../../assets/Fitness_Logo__1_-removebg-preview.png");
+
 export default function LoginScreen({
   onLoginSuccess,
   navigation,
 }: LoginScreenProps) {
-  // 2. Truyền callback vào Hook
   const {
     formData,
     updateField,
@@ -40,7 +41,8 @@ export default function LoginScreen({
         style={styles.content}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Fitup</Text>
+          <Image source={appLogo} style={styles.logo} resizeMode="contain" />
+          <Text style={styles.title}>FitUp</Text>
           <Text style={styles.subtitle}>Chào mừng bạn quay trở lại!</Text>
         </View>
 
@@ -50,19 +52,19 @@ export default function LoginScreen({
             icon="mail-outline"
             placeholder="Nhập email của bạn"
             value={formData.email}
-            onChangeText={(v) => updateField("email", v)}
+            onChangeText={(v: string) => updateField("email", v)}
             autoCapitalize="none"
           />
 
           <AuthInput
-            label="Mật khẩu"
+            label="Mat khau"
             icon="lock-closed-outline"
             placeholder="Nhập mật khẩu"
             secureTextEntry={!showPass}
             rightIcon={showPass ? "eye-off-outline" : "eye-outline"}
             onRightIconPress={() => setShowPass(!showPass)}
             value={formData.password}
-            onChangeText={(v) => updateField("password", v)}
+            onChangeText={(v: string) => updateField("password", v)}
           />
 
           <TouchableOpacity
@@ -102,6 +104,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#121212" },
   content: { flex: 1, padding: 24, justifyContent: "center" },
   header: { alignItems: "center", marginBottom: 40 },
+  logo: { width: 110, height: 110, marginBottom: 10 },
   title: { fontSize: 42, fontWeight: "bold", color: "#FF9500" },
   subtitle: { color: "#999", marginTop: 10 },
   form: { backgroundColor: "#1A1A1A", padding: 20, borderRadius: 24 },

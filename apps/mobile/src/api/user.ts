@@ -1,6 +1,7 @@
 import { http } from "../lib/http";
 
 export const userRequest = {
+  getMe: () => http.get("/api/me"),
   // Lấy profile của chính mình (thường dùng sau khi login)
   getMyProfile: () => http.get("/UserProfiles"),
 
