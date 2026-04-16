@@ -9,18 +9,21 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
-  ScrollView,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { bookingRequest } from "@/api/booking";
 import dayjs from "dayjs";
+import "dayjs/locale/vi";
+
+const { width } = Dimensions.get("window");
 
 export default function MyBookingsScreen({ navigation }: any) {
   const queryClient = useQueryClient();
 
-  // State cho Modal Feedback
+  // --- STATE QUẢN LÝ FEEDBACK ---
   const [isFeedbackVisible, setFeedbackVisible] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null,
@@ -28,7 +31,7 @@ export default function MyBookingsScreen({ navigation }: any) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
 
-  // 1. API: Lấy danh sách lịch đã đặt
+  // 1. API: LẤY DANH SÁCH LỊCH ĐÃ ĐẶT (HỌC VIÊN)
   const {
     data: res,
     isLoading,
@@ -39,22 +42,27 @@ export default function MyBookingsScreen({ navigation }: any) {
   });
   const bookings = res?.data?.data?.data || [];
 
-  // 2. API: Hủy lịch tập (DELETE)
+  // 2. MUTATION: HỦY LỊCH TẬP
   const cancelMutation = useMutation({
     mutationFn: (id: string) => bookingRequest.cancelBooking(id),
     onSuccess: () => {
-      Alert.alert("Thành công", "Đã hủy lịch tập.");
+      Alert.alert("Thành công", "Đã hủy lịch tập của bạn.");
       queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["pt-available-slots"] }); // Hoàn lại slot cho PT
+      queryClient.invalidateQueries({ queryKey: ["pt-available-slots"] }); // Trả lại slot cho PT
     },
-    onError: () => Alert.alert("Lỗi", "Không thể hủy lịch lúc này."),
+    onError: (err: any) => {
+      Alert.alert(
+        "Lỗi",
+        err.response?.data?.msg || "Không thể hủy lịch lúc này.",
+      );
+    },
   });
 
-  // 3. API: Gửi Feedback (POST)
+  // 3. MUTATION: GỬI ĐÁNH GIÁ
   const feedbackMutation = useMutation({
     mutationFn: (body: any) => bookingRequest.sendFeedback(body),
     onSuccess: () => {
-      Alert.alert("Cảm ơn", "Đánh giá của bạn đã được gửi đi!");
+      Alert.alert("Cảm ơn 🧡", "Đánh giá của bạn giúp dịch vụ tốt hơn!");
       setFeedbackVisible(false);
       setRating(5);
       setComment("");
@@ -77,90 +85,121 @@ export default function MyBookingsScreen({ navigation }: any) {
     });
   };
 
-  const renderBookingItem = ({ item }: any) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View>
-          <Text style={styles.ptName}>{item.ptName}</Text>
-          <Text style={styles.bookingId}>ID: #{item.id.substring(0, 8)}</Text>
-        </View>
-        <View
-          style={[
-            styles.statusTag,
-            {
-              backgroundColor:
-                item.status === "Confirmed" ? "#4CD964" : "#2C2C2E",
-            },
-          ]}
-        >
-          <Text
+  // --- RENDER GIAO DIỆN ITEM ---
+  const renderBookingItem = ({ item }: any) => {
+    const isConfirmed = item.status === "Confirmed";
+    const isCompleted = item.status === "Completed";
+
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.9}
+        onPress={() =>
+          navigation.navigate("BookingDetail", { bookingData: item })
+        } // 🚀 TRUYỀN DỮ LIỆU SANG CHI TIẾT
+      >
+        <View style={styles.cardHeader}>
+          <View>
+            <Text style={styles.ptName}>
+              {item.ptName || "Huấn luyện viên"}
+            </Text>
+            <Text style={styles.bookingId}>
+              Mã đơn: #{item.id.substring(0, 8).toUpperCase()}
+            </Text>
+          </View>
+
+          {/* TAG TRẠNG THÁI */}
+          <View
             style={[
-              styles.statusText,
-              { color: item.status === "Confirmed" ? "#000" : "#888" },
+              styles.statusTag,
+              {
+                backgroundColor: isConfirmed
+                  ? "#4CD96420"
+                  : isCompleted
+                    ? "#FF950020"
+                    : "#2C2C2E",
+              },
             ]}
           >
-            {item.status}
+            <Text
+              style={[
+                styles.statusText,
+                {
+                  color: isConfirmed
+                    ? "#4CD964"
+                    : isCompleted
+                      ? "#FF9500"
+                      : "#888",
+                },
+              ]}
+            >
+              {isConfirmed ? "Sắp tới" : isCompleted ? "Đã xong" : item.status}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.infoRow}>
+          <Ionicons name="calendar-outline" size={16} color="#FF9500" />
+          <Text style={styles.infoValue}>
+            {dayjs(item.bookingDate).format("DD/MM/YYYY")} •{" "}
+            {item.startTime.substring(0, 5)} - {item.endTime.substring(0, 5)}
           </Text>
         </View>
-      </View>
 
-      <View style={styles.divider} />
+        <View style={styles.priceRow}>
+          <Text style={styles.priceLabel}>Học phí đã thanh toán:</Text>
+          <Text style={styles.priceValue}>{item.total.toLocaleString()}đ</Text>
+        </View>
 
-      <View style={styles.infoRow}>
-        <Ionicons name="calendar-outline" size={16} color="#FF9500" />
-        <Text style={styles.infoValue}>
-          {dayjs(item.bookingDate).format("DD/MM/YYYY")} •{" "}
-          {item.startTime.substring(0, 5)} - {item.endTime.substring(0, 5)}
-        </Text>
-      </View>
+        {/* CỤM NÚT BẤM DỰA TRÊN TRẠNG THÁI */}
+        <View style={styles.actionRow}>
+          {isConfirmed && (
+            <TouchableOpacity
+              style={styles.secondaryBtn}
+              onPress={() =>
+                Alert.alert("Xác nhận", "Bạn muốn hủy lịch tập này?", [
+                  { text: "Quay lại" },
+                  {
+                    text: "Hủy ngay",
+                    onPress: () => cancelMutation.mutate(item.id),
+                    style: "destructive",
+                  },
+                ])
+              }
+            >
+              <Text style={styles.secondaryBtnText}>Hủy lịch</Text>
+            </TouchableOpacity>
+          )}
 
-      <View style={styles.priceRow}>
-        <Text style={styles.priceLabel}>Tổng thanh toán:</Text>
-        <Text style={styles.priceValue}>{item.total.toLocaleString()}đ</Text>
-      </View>
-
-      <View style={styles.actionRow}>
-        <TouchableOpacity
-          style={styles.secondaryBtn}
-          onPress={() =>
-            Alert.alert("Xác nhận", "Bạn muốn hủy lịch tập này?", [
-              { text: "Không" },
-              {
-                text: "Hủy lịch",
-                onPress: () => cancelMutation.mutate(item.id),
-                style: "destructive",
-              },
-            ])
-          }
-        >
-          <Text style={styles.secondaryBtnText}>Hủy lịch</Text>
-        </TouchableOpacity>
-
-        {item.status === "Confirmed" && (
-          <TouchableOpacity
-            style={styles.primaryBtn}
-            onPress={() => handleOpenFeedback(item.id)}
-          >
-            <Text style={styles.primaryBtnText}>Đánh giá</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
+          {isCompleted && (
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              onPress={() => handleOpenFeedback(item.id)}
+            >
+              <Text style={styles.primaryBtnText}>Đánh giá buổi tập</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
+      {/* HEADER BAR */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Lịch tập của tôi</Text>
-        <TouchableOpacity onPress={() => refetch()}>
+        <TouchableOpacity onPress={() => refetch()} disabled={isLoading}>
           <Ionicons name="refresh" size={22} color="#FF9500" />
         </TouchableOpacity>
       </View>
 
+      {/* DANH SÁCH LỊCH */}
       {isLoading ? (
         <ActivityIndicator color="#FF9500" style={{ marginTop: 50 }} />
       ) : (
@@ -168,12 +207,13 @@ export default function MyBookingsScreen({ navigation }: any) {
           data={bookings}
           keyExtractor={(item) => item.id}
           renderItem={renderBookingItem}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="calendar-outline" size={60} color="#2C2C2E" />
+              <Ionicons name="calendar-outline" size={64} color="#2C2C2E" />
               <Text style={styles.emptyText}>
-                Bạn chưa có lịch tập nào được đặt.
+                Bạn chưa đăng ký lịch tập nào.
               </Text>
             </View>
           }
@@ -186,9 +226,10 @@ export default function MyBookingsScreen({ navigation }: any) {
       <Modal visible={isFeedbackVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+            <View style={styles.modalHeaderLine} />
             <Text style={styles.modalTitle}>Đánh giá buổi tập</Text>
             <Text style={styles.modalSub}>
-              Trải nghiệm của bạn với huấn luyện viên thế nào?
+              Trải nghiệm của Hàn với huấn luyện viên thế nào?
             </Text>
 
             <View style={styles.starRow}>
@@ -196,7 +237,7 @@ export default function MyBookingsScreen({ navigation }: any) {
                 <TouchableOpacity key={s} onPress={() => setRating(s)}>
                   <FontAwesome
                     name={s <= rating ? "star" : "star-o"}
-                    size={40}
+                    size={38}
                     color="#FF9500"
                     style={{ marginHorizontal: 6 }}
                   />
@@ -206,7 +247,7 @@ export default function MyBookingsScreen({ navigation }: any) {
 
             <TextInput
               style={styles.input}
-              placeholder="Nhập cảm nhận của bạn..."
+              placeholder="Nhập cảm nhận của Hàn..."
               placeholderTextColor="#555"
               multiline
               value={comment}
@@ -218,17 +259,20 @@ export default function MyBookingsScreen({ navigation }: any) {
                 style={styles.modalCancel}
                 onPress={() => setFeedbackVisible(false)}
               >
-                <Text style={styles.modalCancelText}>Đóng</Text>
+                <Text style={styles.modalCancelText}>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalSubmit}
+                style={[
+                  styles.modalSubmit,
+                  feedbackMutation.isPending && { opacity: 0.6 },
+                ]}
                 onPress={handleSubmitFeedback}
                 disabled={feedbackMutation.isPending}
               >
                 {feedbackMutation.isPending ? (
                   <ActivityIndicator color="#000" />
                 ) : (
-                  <Text style={styles.modalSubmitText}>Gửi ngay</Text>
+                  <Text style={styles.modalSubmitText}>Gửi đánh giá</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -245,14 +289,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   headerTitle: { color: "#FFF", fontSize: 20, fontWeight: "bold" },
   card: {
     backgroundColor: "#1C1C1E",
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 24,
+    padding: 18,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#2C2C2E",
   },
   cardHeader: {
     flexDirection: "row",
@@ -260,81 +307,95 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   ptName: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
-  bookingId: { color: "#555", fontSize: 11, marginTop: 2 },
-  statusTag: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
+  bookingId: { color: "#555", fontSize: 11, marginTop: 4 },
+  statusTag: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10 },
   statusText: { fontSize: 11, fontWeight: "bold" },
-  divider: { height: 1, backgroundColor: "#2C2C2E", marginVertical: 15 },
+  divider: { height: 1, backgroundColor: "#2C2C2E", marginVertical: 16 },
   infoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   infoValue: { color: "#AAA", fontSize: 14 },
   priceRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 15,
+    marginTop: 18,
     alignItems: "center",
   },
-  priceLabel: { color: "#888", fontSize: 14 },
-  priceValue: { color: "#FF9500", fontSize: 18, fontWeight: "bold" },
+  priceLabel: { color: "#888", fontSize: 13 },
+  priceValue: { color: "#FF9500", fontSize: 18, fontWeight: "900" },
   actionRow: { flexDirection: "row", gap: 12, marginTop: 20 },
   primaryBtn: {
     flex: 1,
     backgroundColor: "#FF9500",
-    padding: 12,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 14,
     alignItems: "center",
   },
-  primaryBtnText: { color: "#000", fontWeight: "bold" },
+  primaryBtnText: { color: "#000", fontWeight: "bold", fontSize: 14 },
   secondaryBtn: {
     flex: 1,
     backgroundColor: "transparent",
-    padding: 12,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 14,
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#FF3B30",
   },
-  secondaryBtnText: { color: "#FF3B30", fontWeight: "bold" },
-  emptyContainer: { flex: 1, alignItems: "center", marginTop: 100 },
-  emptyText: { color: "#444", marginTop: 20 },
+  secondaryBtnText: { color: "#FF3B30", fontWeight: "bold", fontSize: 14 },
+  emptyContainer: { flex: 1, alignItems: "center", marginTop: 120 },
+  emptyText: { color: "#444", marginTop: 20, fontSize: 15 },
 
   // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.85)",
-    justifyContent: "center",
-    padding: 20,
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: "#1C1C1E",
-    borderRadius: 25,
-    padding: 25,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 24,
     alignItems: "center",
+    paddingBottom: 40,
+  },
+  modalHeaderLine: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#333",
+    borderRadius: 2,
+    marginBottom: 20,
   },
   modalTitle: {
     color: "#FFF",
     fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  modalSub: { color: "#888", textAlign: "center", marginBottom: 25 },
-  starRow: { flexDirection: "row", marginBottom: 25 },
+  modalSub: {
+    color: "#888",
+    textAlign: "center",
+    marginBottom: 25,
+    fontSize: 14,
+  },
+  starRow: { flexDirection: "row", marginBottom: 30 },
   input: {
     width: "100%",
     backgroundColor: "#2C2C2E",
     color: "#FFF",
-    borderRadius: 15,
-    padding: 15,
-    height: 100,
+    borderRadius: 16,
+    padding: 16,
+    height: 110,
     textAlignVertical: "top",
-    marginBottom: 25,
+    marginBottom: 30,
+    fontSize: 15,
   },
-  modalActions: { flexDirection: "row", gap: 15 },
-  modalCancel: { flex: 1, padding: 15, alignItems: "center" },
+  modalActions: { flexDirection: "row", gap: 16, width: "100%" },
+  modalCancel: { flex: 1, padding: 16, alignItems: "center" },
   modalCancelText: { color: "#888", fontWeight: "bold" },
   modalSubmit: {
     flex: 2,
     backgroundColor: "#FF9500",
-    padding: 15,
-    borderRadius: 15,
+    padding: 16,
+    borderRadius: 16,
     alignItems: "center",
   },
   modalSubmitText: { color: "#000", fontWeight: "bold" },

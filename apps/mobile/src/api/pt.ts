@@ -14,4 +14,5 @@ export const ptPublicRequest = {
     http.get(`/api/slots/available/${ptId}`, { 
       params: { startDate, endDate } 
     }),
+    getMe: () => http.get("/api/pt/me"),
 };

@@ -1,22 +1,42 @@
 import { Image, Platform } from "react-native";
 
+/**
+ * The require path is relative to this file. 
+ * Ensure scpd.mp4 exists in apps/mobile/assets/
+ */
 const LOCAL_WORKOUT_VIDEO = require("../../assets/scpd.mp4");
+
+// On Android, assets placed in src/main/assets are accessed via this prefix
 const ANDROID_ASSET_VIDEO_URI = "file:///android_asset/scpd.mp4";
 
-const uniqueNonEmpty = (items: string[]) =>
-  Array.from(new Set(items.filter((item) => typeof item === "string" && item.trim().length > 0)));
+const uniqueNonEmpty = (items: (string | undefined | null)[]) =>
+  Array.from(
+    new Set(
+      items.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    )
+  );
 
+/**
+ * Resolves the video source based on the Platform.
+ * Provides a fallback array to handle Metro (Dev) vs Local Assets (Release).
+ */
 export const getWorkoutVideoSources = (): string[] => {
-  const resolvedAssetUri = Image.resolveAssetSource(LOCAL_WORKOUT_VIDEO)?.uri ?? "";
+  const resolvedAsset = Image.resolveAssetSource(LOCAL_WORKOUT_VIDEO);
+  const resolvedUri = resolvedAsset?.uri ?? "";
 
   if (Platform.OS === "android") {
-    // Android release can read from android_asset, while dev often needs Metro asset URI.
-    return uniqueNonEmpty([ANDROID_ASSET_VIDEO_URI, resolvedAssetUri]);
+    // Priority 1: The 'file:///android_asset' path (fastest for Release builds)
+    // Priority 2: The resolved URI (handles Metro bundler in Dev)
+    return uniqueNonEmpty([ANDROID_ASSET_VIDEO_URI, resolvedUri]);
   }
 
-  return uniqueNonEmpty([resolvedAssetUri]);
+  return uniqueNonEmpty([resolvedUri]);
 };
 
+/**
+ * Generates the HTML string for the WebView.
+ * Includes a fallback-on-error script to cycle through sourceList.
+ */
 export const buildLoopingVideoHtml = (videoSources: string[]): string => {
   const sources = JSON.stringify(uniqueNonEmpty(videoSources));
 
@@ -24,28 +44,21 @@ export const buildLoopingVideoHtml = (videoSources: string[]): string => {
     <!doctype html>
     <html>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <style>
           html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
             background: #121212;
             overflow: hidden;
           }
           .wrap {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #121212;
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
           }
           video {
-            width: 100%;
-            height: 100%;
-            background: #000;
+            width: 100%; height: 100%;
+            object-fit: cover; /* Ensures video fills the container nicely */
             pointer-events: none;
           }
         </style>
@@ -60,48 +73,38 @@ export const buildLoopingVideoHtml = (videoSources: string[]): string => {
             playsinline
             webkit-playsinline
             preload="auto"
+            disablePictureInPicture
             controlslist="nofullscreen nodownload noplaybackrate noremoteplayback"
-            disablepictureinpicture
           ></video>
         </div>
         <script>
           (function () {
             const sourceList = ${sources};
             const video = document.getElementById("fitup-video");
-
-            if (!video || !Array.isArray(sourceList) || sourceList.length === 0) {
-              return;
-            }
-
             let currentIndex = 0;
 
-            const tryPlay = () => {
-              video.muted = true;
-              const playPromise = video.play();
-              if (playPromise && typeof playPromise.catch === "function") {
-                playPromise.catch(() => {});
-              }
-            };
+            if (!video || !sourceList.length) return;
 
             const loadSource = (index) => {
-              if (index < 0 || index >= sourceList.length) {
-                return;
-              }
-
+              if (index >= sourceList.length) return;
               currentIndex = index;
               video.src = sourceList[currentIndex];
+              
+              // We call load() and play() to ensure the bridge triggers
               video.load();
-              tryPlay();
+              const playPromise = video.play();
+              if (playPromise) {
+                playPromise.catch(e => console.log("Autoplay blocked or load failed:", e));
+              }
             };
 
-            video.addEventListener("canplay", tryPlay);
-            video.addEventListener("loadeddata", tryPlay);
+            // If a source fails (like the android_asset path in Dev), try the next one
             video.addEventListener("error", () => {
-              if (currentIndex < sourceList.length - 1) {
-                loadSource(currentIndex + 1);
-              }
+              console.log("Failed to load source:", sourceList[currentIndex]);
+              loadSource(currentIndex + 1);
             });
 
+            // Initial load
             loadSource(0);
           })();
         </script>

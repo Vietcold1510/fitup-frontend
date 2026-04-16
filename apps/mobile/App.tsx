@@ -25,7 +25,6 @@ import VerifyOtpScreen from "@/screens/auth/VerifyOtpScreen";
 import ResetPasswordScreen from "@/screens/auth/ResetPasswordScreen";
 import ForgotPasswordScreen from "@/screens/auth/ForgotPasswordScreen";
 import PtScheduleScreen from "@/screens/main/pt/PtScheduleScreen";
-import PtSetAvailabilityScreen from "@/screens/main/pt/PtSetAvailabilityScreen";
 import PtBookingRequestsScreen from "@/screens/main/pt/PtBookingRequestsScreen";
 import PtBookingDetailScreen from "@/screens/main/pt/PtBookingDetailScreen";
 import PremiumDetailScreen from "@/screens/main/premium/PremiumDetailScreen";
@@ -37,6 +36,7 @@ import TopUpPointScreen from "@/screens/main/topup/TopUpPointScreen";
 import PaymentResultScreen from "@/screens/main/topup/PaymentResultScreen"; // 👈 THÊM MỚI
 import PaymentWebViewScreen from "@/screens/main/topup/PaymentWebViewScreen";
 import TopUpHistoryScreen from "@/screens/main/topup/TopUpHistoryScreen";
+import PtMyBookingsScreen from "@/screens/main/pt/PtMyBookingsScreen";
 
 // 🛠️ CẤU HÌNH LINKING ĐỂ BẮT ĐƯỜNG DẪN fitup://payment-result
 const linking = {
@@ -92,11 +92,11 @@ function RootNavigation() {
               <Stack.Screen name="PtMain" component={PtMainTab} />
               <Stack.Screen name="PtSchedule" component={PtScheduleScreen} />
               <Stack.Screen
-                name="PtSetAvailability"
-                component={PtSetAvailabilityScreen}
+                name="PtMyBookings"
+                component={PtMyBookingsScreen}
               />
               <Stack.Screen
-                name="PtBookingRequests"
+                name="PtBookingRequest"
                 component={PtBookingRequestsScreen}
               />
               <Stack.Screen
@@ -131,7 +131,7 @@ function RootNavigation() {
             name="TransactionDetail"
             component={TransactionDetailScreen}
           />
-          
+
           <Stack.Screen
             name="AiChatConversations"
             component={AiChatConversationsScreen}

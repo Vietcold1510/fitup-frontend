@@ -5,280 +5,357 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
-  FlatList,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
+import "dayjs/locale/vi";
 
-// MOCK DATA: Hàn sẽ thay mảng này bằng dữ liệu từ API (ví dụ: data từ useQuery)
-const MOCK_REQUESTS = [
-  {
-    id: "1",
-    userName: "Username",
-    programType: "Personal Training",
-    price: 85,
-    date: "Dec 15, 2:00 PM",
-    duration: "60 min",
-    location: "Downtown Gym",
-    note: "Looking for strength training focused session",
-    tagColor: "#2F80ED", // Màu xanh dương
-  },
-  {
-    id: "2",
-    userName: "Username",
-    programType: "Yoga Session",
-    price: 65,
-    date: "Dec 16, 9:00 AM",
-    duration: "45 min",
-    location: "Online Session",
-    isOnline: true,
-    note: "Beginner level, focusing on flexibility",
-    tagColor: "#27AE60", // Màu xanh lá
-  },
-  {
-    id: "3",
-    userName: "Username",
-    programType: "HIIT Training",
-    price: 95,
-    date: "Dec 17, 6:30 PM",
-    duration: "90 min",
-    location: "Client's Home",
-    note: "High intensity workout, have equipment ready",
-    tagColor: "#9B51E0", // Màu tím
-  },
-];
+import { bookingRequest } from "@/api/booking";
 
-export default function PtBookingRequestsScreen() {
+export default function PtBookingRequestScreen() {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const queryClient = useQueryClient();
+
+  // 1. Lấy dữ liệu từ route params
+  const { bookingData } = route.params || {};
+
+  // 🚀 THÊM LOG TẠI ĐÂY ĐỂ KIỂM TRA
+  console.log("====================================");
+  console.log("🔍 FULL ROUTE PARAMS:", JSON.stringify(route.params, null, 2));
+  console.log("📅 BOOKING DATA ID:", bookingData?.id);
+  console.log("👤 PT NAME:", bookingData?.ptName);
+  console.log("🚦 STATUS:", bookingData?.status);
+  console.log("====================================");
+  // 2. Mutation xác nhận hoàn thành buổi tập (Dành cho PT)
+  const completeMutation = useMutation({
+    mutationFn: () => bookingRequest.completeBooking(bookingData.id),
+    onSuccess: () => {
+      Alert.alert(
+        "Thành công 🎖️",
+        "Hệ thống đã ghi nhận buổi tập hoàn thành!",
+        [
+          {
+            text: "Đã hiểu",
+            onPress: () => {
+              // Refetch lại danh sách lịch tập của PT để cập nhật trạng thái mới
+              queryClient.invalidateQueries({ queryKey: ["pt-my-bookings"] });
+              navigation.goBack();
+            },
+          },
+        ],
+      );
+    },
+    onError: (err: any) => {
+      Alert.alert(
+        "Lỗi xác nhận",
+        err.response?.data?.msg || "Không thể thực hiện thao tác này lúc này.",
+      );
+    },
+  });
+
+  if (!bookingData) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ color: "#FFF" }}>
+          Không tìm thấy thông tin đơn đặt lịch
+        </Text>
+        <TouchableOpacity
+          style={{ marginTop: 20 }}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={{ color: "#FF9500" }}>Quay lại</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const isConfirmed = bookingData.status === "Confirmed";
+  const isCompleted = bookingData.status === "Completed";
+
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
-      {/* HEADER */}
+    <SafeAreaView style={styles.container}>
+      {/* THANH TIÊU ĐỀ */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Booking Requests</Text>
-        <Ionicons name="ellipsis-vertical" size={20} color="#888" />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+        >
+          <Ionicons name="arrow-back" size={24} color="#FFF" />
+        </TouchableOpacity>
+        <View style={styles.headerInfo}>
+          <View style={styles.avatarPlaceholder}>
+            <Ionicons name="person" size={20} color="#666" />
+          </View>
+          <View style={{ marginLeft: 12 }}>
+            <Text style={styles.headerName}>
+              {bookingData.ptName || "Học viên FitUp"}
+            </Text>
+            <Text style={styles.headerSub}>Học viên của bạn</Text>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.chatBtn}>
+          <Ionicons name="chatbubble-ellipses" size={24} color="#FF9500" />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* BANNER THÔNG BÁO */}
-        <View style={styles.alertBanner}>
-          <Ionicons name="time-outline" size={18} color="#FFF" />
-          <Text style={styles.alertText}>
-            Respond within 12h to keep your response rate high
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 16 }}
+      >
+        {/* TRẠNG THÁI BUỔI TẬP */}
+        <View
+          style={[
+            styles.statusBanner,
+            isCompleted ? styles.bgGreen : styles.bgOrange,
+          ]}
+        >
+          <Ionicons
+            name={isCompleted ? "checkmark-circle" : "time"}
+            size={18}
+            color={isCompleted ? "#4CD964" : "#FF9500"}
+          />
+          <Text
+            style={[
+              styles.statusText,
+              { color: isCompleted ? "#4CD964" : "#FF9500" },
+            ]}
+          >
+            Trạng thái:{" "}
+            {isCompleted ? "Đã hoàn thành" : "Đã xác nhận (Sắp diễn ra)"}
           </Text>
         </View>
 
-        {/* SEARCH & FILTERS */}
-        <View style={styles.searchSection}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search-outline" size={18} color="#888" />
-            <TextInput
-              placeholder="Search requests..."
-              placeholderTextColor="#888"
-              style={styles.searchInput}
-            />
+        {/* CHI TIẾT LỊCH TẬP */}
+        <View style={styles.mainCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.tagPrimary}>
+              <Text style={styles.tagText}>Huấn luyện cá nhân</Text>
+            </View>
+            <Text style={styles.bookingId}>
+              Mã đơn: #{bookingData.id.substring(0, 8).toUpperCase()}
+            </Text>
           </View>
-          <View style={styles.filterRow}>
-            <FilterButton icon="calendar-outline" label="Date" />
-            <FilterButton icon="pricetag-outline" label="Program" />
-            <FilterButton icon="cash-outline" label="Price" />
+
+          <View style={styles.infoItem}>
+            <Ionicons name="calendar" size={20} color="#FF9500" />
+            <View style={{ marginLeft: 15 }}>
+              <Text style={styles.infoLabel}>
+                {dayjs(bookingData.bookingDate)
+                  .locale("vi")
+                  .format("dddd, DD [Tháng] MM, YYYY")}
+              </Text>
+              <Text style={styles.infoSub}>
+                {bookingData.startTime.substring(0, 5)} -{" "}
+                {bookingData.endTime.substring(0, 5)}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.infoItem}>
+            <Ionicons name="fitness" size={20} color="#FF9500" />
+            <Text style={[styles.infoLabel, { marginLeft: 15 }]}>
+              Buổi tập 60 phút
+            </Text>
+          </View>
+
+          <View style={styles.infoItem}>
+            <Ionicons name="wallet" size={20} color="#FF9500" />
+            <Text style={[styles.infoLabel, { marginLeft: 15 }]}>
+              {bookingData.total.toLocaleString("vi-VN")} VNĐ
+            </Text>
           </View>
         </View>
 
-        {/* LIST REQUESTS */}
-        <View style={{ padding: 16 }}>
-          {MOCK_REQUESTS.map((item) => (
-            <BookingCard key={item.id} data={item} />
-          ))}
+        {/* GHI CHÚ TỪ HỌC VIÊN */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="document-text" size={18} color="#FF9500" />
+            <Text style={styles.sectionTitle}>Lời nhắn từ học viên</Text>
+          </View>
+          <Text style={styles.noteContent}>
+            {bookingData.note && bookingData.note !== "nothing"
+              ? `"${bookingData.note}"`
+              : "Học viên không có yêu cầu đặc biệt nào."}
+          </Text>
         </View>
+
+        {/* CHÍNH SÁCH DÀNH CHO PT */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="shield-checkmark" size={18} color="#FF9500" />
+            <Text style={styles.sectionTitle}>Nhiệm vụ huấn luyện</Text>
+          </View>
+          <Text style={styles.policyContent}>
+            Hãy đảm bảo bạn đã hoàn thành buổi hướng dẫn cho học viên trước khi
+            xác nhận. Sau khi xác nhận "Hoàn thành", hệ thống sẽ tất toán thù
+            lao cho bạn.
+          </Text>
+        </View>
+
+        <View style={{ height: 120 }} />
       </ScrollView>
+
+      {/* NÚT XÁC NHẬN - CHỈ HIỆN KHI TRẠNG THÁI LÀ CONFIRMED */}
+      {isConfirmed && (
+        <View style={styles.bottomBar}>
+          <TouchableOpacity
+            style={styles.completeBtn}
+            onPress={() => {
+              Alert.alert(
+                "Xác nhận hoàn thành",
+                "Buổi tập này thực sự đã kết thúc tốt đẹp chứ?",
+                [
+                  { text: "Chưa, quay lại", style: "cancel" },
+                  {
+                    text: "Đã hoàn thành",
+                    style: "default",
+                    onPress: () => completeMutation.mutate(),
+                  },
+                ],
+              );
+            }}
+            disabled={completeMutation.isPending}
+          >
+            {completeMutation.isPending ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Text style={styles.completeText}>XÁC NHẬN HOÀN THÀNH</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
-// Component phụ: Nút Filter
-const FilterButton = ({ icon, label }: any) => (
-  <TouchableOpacity style={styles.filterBtn}>
-    <Ionicons name={icon} size={14} color="#888" />
-    <Text style={styles.filterBtnText}>{label}</Text>
-  </TouchableOpacity>
-);
-
-// Component chính: Card yêu cầu đặt lịch
-const BookingCard = ({ data }: any) => (
-  <View style={styles.card}>
-    <View style={styles.cardHeader}>
-      <View style={styles.avatar} />
-      <View style={{ flex: 1, marginLeft: 12 }}>
-        <Text style={styles.userName}>{data.userName}</Text>
-        <Text style={styles.userSub}>Customer</Text>
-      </View>
-      <View style={styles.newBadge}>
-        <Text style={styles.newText}>New</Text>
-      </View>
-    </View>
-
-    <View style={styles.priceRow}>
-      <View style={[styles.programTag, { backgroundColor: data.tagColor }]}>
-        <Text style={styles.programText}>{data.programType}</Text>
-      </View>
-      <Text style={styles.priceText}>${data.price}</Text>
-    </View>
-
-    <View style={styles.infoRow}>
-      <View style={styles.infoItem}>
-        <Ionicons name="calendar-outline" size={16} color="#888" />
-        <Text style={styles.infoValue}>{data.date}</Text>
-      </View>
-      <View style={[styles.infoItem, { marginLeft: 15 }]}>
-        <Ionicons name="time-outline" size={16} color="#888" />
-        <Text style={styles.infoValue}>{data.duration}</Text>
-      </View>
-    </View>
-
-    <View style={styles.infoItem}>
-      <Ionicons
-        name={data.isOnline ? "videocam-outline" : "location-outline"}
-        size={16}
-        color="#888"
-      />
-      <Text style={styles.infoValue}>{data.location}</Text>
-    </View>
-
-    <View style={styles.noteBox}>
-      <Text style={styles.noteText}>"{data.note}"</Text>
-    </View>
-
-    <View style={styles.actionRow}>
-      <TouchableOpacity style={styles.acceptBtn}>
-        <Text style={styles.acceptText}>Accept</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.declineBtn}>
-        <Text style={styles.declineText}>Decline</Text>
-      </TouchableOpacity>
-    </View>
-
-    <TouchableOpacity style={styles.proposeBtn}>
-      <Text style={styles.proposeText}>Propose new time</Text>
-    </TouchableOpacity>
-  </View>
-);
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#121212" },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#121212",
+  },
   header: {
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    backgroundColor: "#1C1C1E",
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
+  },
+  headerInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    marginLeft: 15,
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  backBtn: { padding: 4 },
+  chatBtn: { padding: 4 },
+  headerName: { color: "#FFF", fontSize: 16, fontWeight: "bold" },
+  headerSub: { color: "#888", fontSize: 12 },
+
+  statusBanner: {
+    flexDirection: "row",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  bgOrange: { backgroundColor: "#FF950015" },
+  bgGreen: { backgroundColor: "#4CD96415" },
+  statusText: { fontWeight: "bold", fontSize: 14 },
+
+  mainCard: {
+    backgroundColor: "#1C1C1E",
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#2C2C2E",
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    marginBottom: 20,
   },
-  headerTitle: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
-
-  alertBanner: {
-    backgroundColor: "#F2994A",
-    margin: 16,
-    padding: 12,
+  tagPrimary: {
+    backgroundColor: "#FF9500",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
   },
-  alertText: { color: "#FFF", fontSize: 12, fontWeight: "500", flex: 1 },
+  tagText: { color: "#000", fontWeight: "bold", fontSize: 11 },
+  bookingId: { color: "#666", fontSize: 12 },
+  infoItem: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
+  infoLabel: { color: "#FFF", fontSize: 15, fontWeight: "600" },
+  infoSub: { color: "#888", fontSize: 13, marginTop: 4 },
 
-  searchSection: { paddingHorizontal: 16 },
-  searchBar: {
-    backgroundColor: "#2C2C2E",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    height: 45,
-  },
-  searchInput: { flex: 1, color: "#FFF", marginLeft: 8 },
-  filterRow: { flexDirection: "row", marginTop: 12, gap: 10 },
-  filterBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#2C2C2E",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 6,
-  },
-  filterBtnText: { color: "#888", fontSize: 13 },
-
-  card: {
+  sectionCard: {
     backgroundColor: "#1C1C1E",
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 16,
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 15 },
-  avatar: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: "#555",
-  },
-  userName: { color: "#FFF", fontSize: 16, fontWeight: "bold" },
-  userSub: { color: "#888", fontSize: 12 },
-  newBadge: {
-    backgroundColor: "#F2994A",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  newText: { color: "#000", fontSize: 10, fontWeight: "bold" },
-
-  priceRow: {
+  sectionHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
+    gap: 8,
   },
-  programTag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  programText: { color: "#FFF", fontSize: 12, fontWeight: "600" },
-  priceText: { color: "#F2994A", fontSize: 18, fontWeight: "bold" },
-
-  infoRow: { flexDirection: "row", marginBottom: 8 },
-  infoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 8,
-  },
-  infoValue: { color: "#AAA", fontSize: 13 },
-
-  noteBox: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    padding: 12,
-    borderRadius: 10,
-    marginVertical: 10,
-  },
-  noteText: {
+  sectionTitle: { color: "#FFF", fontSize: 15, fontWeight: "bold" },
+  noteContent: {
     color: "#CCC",
-    fontSize: 13,
+    fontSize: 14,
+    lineHeight: 22,
     fontStyle: "italic",
-    textAlign: "center",
   },
+  policyContent: { color: "#888", fontSize: 13, lineHeight: 20 },
 
-  actionRow: { flexDirection: "row", gap: 12, marginTop: 10 },
-  acceptBtn: {
-    flex: 1,
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#1C1C1E",
+    padding: 20,
+    paddingBottom: 34,
+    borderTopWidth: 1,
+    borderTopColor: "#333",
+  },
+  completeBtn: {
     backgroundColor: "#FF9500",
-    padding: 12,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 18,
     alignItems: "center",
+    elevation: 4,
+    shadowColor: "#FF9500",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
-  declineBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#444",
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
+  completeText: {
+    color: "#000",
+    fontWeight: "900",
+    fontSize: 16,
+    letterSpacing: 1,
   },
-  acceptText: { color: "#000", fontWeight: "bold" },
-  declineText: { color: "#AAA", fontWeight: "bold" },
-  proposeBtn: { alignSelf: "center", marginTop: 15 },
-  proposeText: { color: "#FF9500", fontSize: 13, fontWeight: "600" },
 });
