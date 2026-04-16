@@ -1,16 +1,37 @@
+import React, { useMemo } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQuery } from "@tanstack/react-query";
+
+// Import Screens
 import PtDashboardScreen from "@/screens/main/pt/PtDashboardScreen";
 import ProfileScreen from "@/screens/main/profile/ProfileScreen";
-import { View, Text, StyleSheet } from "react-native";
 import PtScheduleScreen from "@/screens/main/pt/PtScheduleScreen";
-import PtBookingRequestsScreen from "@/screens/main/pt/PtBookingRequestsScreen";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import PtMyBookingsScreen from "@/screens/main/pt/PtMyBookingsScreen";
+
+// Import API
+import { bookingRequest } from "@/api/booking";
 
 const Tab = createBottomTabNavigator();
 
 export default function PtMainTab() {
   const insets = useSafeAreaInsets();
+
+  // 1. Lấy danh sách lịch tập của PT từ Cache hoặc API
+  const { data: res } = useQuery({
+    queryKey: ["pt-my-bookings"],
+    queryFn: () => bookingRequest.getPtBookings(),
+    // Tùy chọn: Tự động refetch mỗi 30s để cập nhật đơn mới mà không cần load lại app
+    refetchInterval: 30000,
+  });
+
+  // 2. Tính toán số lượng đơn đang ở trạng thái "Confirmed" (Chờ dạy)
+  const confirmedCount = useMemo(() => {
+    const bookings = res?.data?.data || [];
+    return bookings.filter((item: any) => item.status === "Confirmed").length;
+  }, [res]);
 
   return (
     <Tab.Navigator
@@ -26,53 +47,59 @@ export default function PtMainTab() {
         ],
         tabBarActiveTintColor: "#FF9500",
         tabBarInactiveTintColor: "#888",
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
       }}
     >
       <Tab.Screen
         name="Dashboard"
         component={PtDashboardScreen}
         options={{
+          tabBarLabel: "Thống kê",
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="chart-line" size={26} color={color} />
           ),
         }}
       />
+
       <Tab.Screen
         name="Schedule"
         component={PtScheduleScreen}
         options={{
+          tabBarLabel: "Lịch trống",
           tabBarIcon: ({ color }) => (
             <Ionicons name="calendar-outline" size={24} color={color} />
           ),
         }}
       />
+
       <Tab.Screen
-        name="Requests"
-        component={PtBookingRequestsScreen}
+        name="MyBookings"
+        component={PtMyBookingsScreen}
         options={{
+          tabBarLabel: "Lịch dạy",
           tabBarIcon: ({ color }) => (
-            <View>
-              <Ionicons name="notifications-outline" size={24} color={color} />
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>5</Text>
-              </View>
-            </View>
+            <Ionicons name="notifications-outline" size={26} color={color} />
           ),
+          // 🚀 HIỂN THỊ SỐ LƯỢNG ĐƠN "CONFIRMED"
+          tabBarBadge: confirmedCount > 0 ? confirmedCount : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: "#FF3B30", // Màu đỏ cảnh báo
+            color: "#FFF",
+            fontSize: 10,
+            fontWeight: "bold",
+            lineHeight: 15,
+          },
         }}
       />
-      <Tab.Screen
-        name="Available"
-        component={PtDashboardScreen}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="help-circle-outline" size={26} color={color} />
-          ),
-        }}
-      />
+
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
+          tabBarLabel: "Cá nhân",
           tabBarIcon: ({ color }) => (
             <Ionicons name="person-outline" size={24} color={color} />
           ),
@@ -85,19 +112,9 @@ export default function PtMainTab() {
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: "#121212",
-    borderTopWidth: 0,
+    borderTopWidth: 1,
+    borderTopColor: "#1C1C1E",
     paddingTop: 4,
+    elevation: 0, // Xóa shadow trên Android
   },
-  badge: {
-    position: "absolute",
-    right: -6,
-    top: -2,
-    backgroundColor: "#FF9500",
-    borderRadius: 8,
-    width: 16,
-    height: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  badgeText: { color: "#000", fontSize: 10, fontWeight: "bold" },
 });

@@ -1,124 +1,233 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   StyleSheet,
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
+  ActivityIndicator,
+  RefreshControl,
+  Dimensions,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
+import "dayjs/locale/vi";
+
+// Import APIs
+import { bookingRequest } from "@/api/booking";
+import { ptPublicRequest } from "@/api/pt";
+
+const { width } = Dimensions.get("window");
 
 export default function PtDashboardScreen() {
+  const navigation = useNavigation<any>();
+
+  // 1. LẤY THÔNG TIN CÁ NHÂN PT (displayName, experience...)
+  const { data: ptRes, isLoading: isPtLoading } = useQuery({
+    queryKey: ["pt-me"],
+    queryFn: () => ptPublicRequest.getMe(),
+  });
+  const ptInfo = ptRes?.data?.data;
+
+  // 2. LẤY DANH SÁCH LỊCH TẬP CỦA PT
+  const {
+    data: bookingsRes,
+    isLoading: isBookingsLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["pt-my-bookings"],
+    queryFn: () => bookingRequest.getPtBookings(),
+  });
+  const bookings = bookingsRes?.data?.data || [];
+
+  // 3. LOGIC TÓM TẮT DỮ LIỆU
+  const dashboardData = useMemo(() => {
+    const today = dayjs().format("YYYY-MM-DD");
+
+    const todaySessionsCount = bookings.filter(
+      (b: any) =>
+        dayjs(b.bookingDate).isSame(today, "day") && b.status === "Confirmed",
+    ).length;
+
+    const totalPending = bookings.filter(
+      (b: any) => b.status === "Confirmed",
+    ).length;
+
+    const next = bookings
+      .filter(
+        (b: any) =>
+          b.status === "Confirmed" &&
+          dayjs(`${b.bookingDate} ${b.startTime}`).isAfter(dayjs()),
+      )
+      .sort(
+        (a: any, b: any) =>
+          dayjs(`${a.bookingDate} ${a.startTime}`).unix() -
+          dayjs(`${b.bookingDate} ${b.startTime}`).unix(),
+      )[0];
+
+    return { todaySessionsCount, totalPending, next };
+  }, [bookings]);
+
+  const isLoading = isPtLoading || isBookingsLoading;
+
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
-      {/* Header */}
+    <SafeAreaView edges={["top"]} style={styles.container}>
+      {/* HEADER: CHỈ HIỆN TÊN VÀ AVATAR */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Trainer Dashboard</Text>
-        <View style={styles.headerRight}>
-          <View style={styles.incomeBadge}>
-            <Text style={styles.incomeText}>đ2.4M</Text>
-          </View>
-          <View style={styles.avatarMini} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.welcomeText}>Chào mừng trở lại,</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {isPtLoading
+              ? "Đ Đang tải..."
+              : ptInfo?.displayName || "Huấn luyện viên"}
+          </Text>
         </View>
+        <TouchableOpacity
+          style={styles.avatarCircle}
+          onPress={() => navigation.navigate("Profile")}
+        >
+          <Ionicons name="person-circle" size={40} color="#FF9500" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refetch}
+            tintColor="#FF9500"
+            colors={["#FF9500"]}
+          />
+        }
       >
-        {/* Quick Stats Grid */}
+        {/* QUICK STATS GRID: THAY THU NHẬP BẰNG KINH NGHIỆM */}
         <View style={styles.statsGrid}>
           <StatCard
-            title="Today's Sessions"
-            value="8"
-            sub="Next: 14:30"
+            title="Dạy hôm nay"
+            value={dashboardData.todaySessionsCount}
+            sub={
+              dashboardData.todaySessionsCount > 0
+                ? "Bắt đầu ngay"
+                : "Lịch trống"
+            }
             color="#FF9500"
           />
-          <StatCard title="Pending Requests" value="5" badge="3" color="#FFF" />
           <StatCard
-            title="This Week"
-            value="đ2.4M"
-            sub="+12%"
+            title="Lịch chờ"
+            value={dashboardData.totalPending}
+            badge={
+              dashboardData.totalPending > 0 ? dashboardData.totalPending : null
+            }
+            color="#FFF"
+          />
+          <StatCard
+            title="Kinh nghiệm"
+            value={`${ptInfo?.experienceYears || 0}`}
+            sub="Năm dạy"
             color="#4CD964"
-            isPrice
           />
         </View>
 
-        {/* Next Session Card */}
-        <Text style={styles.sectionTitle}>Next Session</Text>
-        <View style={styles.nextSessionCard}>
-          <View style={styles.userRow}>
-            <View style={styles.userAvatar} />
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.userName}>Username</Text>
-              <Text style={styles.programName}>Weight Loss Program</Text>
-            </View>
-            <View style={styles.premiumLabel}>
-              <Text style={styles.premiumText}>Premium</Text>
-            </View>
-          </View>
-          <View style={styles.timeRow}>
-            <Ionicons name="time-outline" size={18} color="#FF9500" />
-            <Text style={styles.timeText}>Today, 2:30 PM - 3:30 PM</Text>
-          </View>
-          <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.btnSecondary}>
-              <Ionicons name="chatbubble-outline" size={18} color="#FFF" />
-              <Text style={styles.btnText}>Chat</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.btnSecondary}>
-              <Ionicons name="call-outline" size={18} color="#FFF" />
-              <Text style={styles.btnText}>Call</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.btnPrimary}>
-              <Text style={styles.btnTextBlack}>Open Details</Text>
-            </TouchableOpacity>
-          </View>
+        {/* NEXT SESSION CARD */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Buổi dạy tiếp theo</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("MyBookings")}>
+            <Text style={styles.seeAllText}>Xem tất cả</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Pending Requests List */}
-        <Text style={styles.sectionTitle}>Pending Booking Requests</Text>
-        {[1, 2, 3].map((item) => (
-          <View key={item} style={styles.requestCard}>
+        {dashboardData.next ? (
+          <TouchableOpacity
+            style={styles.nextSessionCard}
+            onPress={() =>
+              navigation.navigate("PtBookingRequest", {
+                bookingData: dashboardData.next,
+              })
+            }
+          >
             <View style={styles.userRow}>
-              <View style={styles.userAvatar} />
+              <View style={styles.userAvatar}>
+                <Ionicons name="person" size={24} color="#555" />
+              </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.userName}>Username</Text>
-                <Text style={styles.programName}>Tomorrow, 10:00 AM</Text>
+                <Text style={styles.userName}>
+                  {dashboardData.next.ptName || "Học viên FitUp"}
+                </Text>
+                <Text style={styles.programName}>Huấn luyện viên cá nhân</Text>
               </View>
-              <View style={styles.newLabel}>
-                <Text style={styles.newText}>New</Text>
+              <View style={styles.statusLabel}>
+                <Text style={styles.statusLabelText}>Sắp tới</Text>
               </View>
             </View>
-            <Text style={styles.priceRequest}>đ350,000 per session</Text>
-            <View style={styles.requestActionRow}>
-              <TouchableOpacity style={styles.acceptBtn}>
-                <Text style={styles.btnTextBlack}>Accept</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.declineBtn}>
-                <Text style={styles.btnText}>Decline</Text>
-              </TouchableOpacity>
+            <View style={styles.timeInfoRow}>
+              <View style={styles.timeTag}>
+                <Ionicons name="calendar-outline" size={14} color="#FF9500" />
+                <Text style={styles.timeTagText}>
+                  {dayjs(dashboardData.next.bookingDate).format("DD/MM/YYYY")}
+                </Text>
+              </View>
+              <View style={styles.timeTag}>
+                <Ionicons name="time-outline" size={14} color="#FF9500" />
+                <Text style={styles.timeTagText}>
+                  {dashboardData.next.startTime.substring(0, 5)} -{" "}
+                  {dashboardData.next.endTime.substring(0, 5)}
+                </Text>
+              </View>
             </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.emptyCard}>
+            <Ionicons name="calendar-clear-outline" size={40} color="#333" />
+            <Text style={styles.emptyText}>
+              Hôm nay bạn không có lịch dạy nào.
+            </Text>
           </View>
-        ))}
+        )}
 
-        {/* Quick Actions Grid */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        {/* QUICK ACTIONS: LOẠI BỎ THU NHẬP */}
+        <Text style={styles.sectionTitle}>Quản lý nhanh</Text>
         <View style={styles.quickActionsGrid}>
-          <ActionButton icon="calendar" title="Set Availability" />
-          <ActionButton icon="cash-outline" title="Update Pricing" />
-          <ActionButton icon="person-outline" title="Edit Profile" />
-          <ActionButton icon="wallet-outline" title="Payouts" />
+          <ActionButton
+            icon="calendar"
+            title="Cài đặt lịch dạy"
+            onPress={() => navigation.navigate("Schedule")}
+          />
+          <ActionButton
+            icon="list-outline"
+            title="Yêu cầu của bạn"
+            onPress={() => navigation.navigate("MyBookings")}
+          />
+          <ActionButton
+            icon="person-outline"
+            title="Hồ sơ cá nhân"
+            onPress={() => navigation.navigate("Profile")}
+          />
+          <ActionButton
+            icon="shield-checkmark-outline"
+            title="Chứng chỉ"
+            onPress={() =>
+              Alert.alert(
+                "Thông báo",
+                "Tính năng xem bằng cấp đang phát triển.",
+              )
+            }
+          />
         </View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 // Sub-components
-const StatCard = ({ title, value, sub, badge, color, isPrice }: any) => (
+const StatCard = ({ title, value, sub, badge, color }: any) => (
   <View style={styles.statCard}>
     {badge && (
       <View style={styles.statBadge}>
@@ -129,7 +238,10 @@ const StatCard = ({ title, value, sub, badge, color, isPrice }: any) => (
     <Text style={styles.statTitle}>{title}</Text>
     {sub && (
       <Text
-        style={[styles.statSub, { color: isPrice ? "#4CD964" : "#FF9500" }]}
+        style={[
+          styles.statSub,
+          { color: color === "#4CD964" ? "#4CD964" : "#FF9500" },
+        ]}
       >
         {sub}
       </Text>
@@ -137,170 +249,146 @@ const StatCard = ({ title, value, sub, badge, color, isPrice }: any) => (
   </View>
 );
 
-const ActionButton = ({ icon, title }: any) => (
-  <TouchableOpacity style={styles.actionBtn}>
-    <Ionicons name={icon} size={20} color="#FF9500" />
+const ActionButton = ({ icon, title, onPress }: any) => (
+  <TouchableOpacity style={styles.actionBtn} onPress={onPress}>
+    <View style={styles.iconCircle}>
+      <Ionicons name={icon} size={20} color="#FF9500" />
+    </View>
     <Text style={styles.actionBtnText}>{title}</Text>
   </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#121212" },
+  container: { flex: 1, backgroundColor: "#000" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 20,
   },
-  headerTitle: { color: "#FFF", fontSize: 20, fontWeight: "bold" },
-  headerRight: { flexDirection: "row", alignItems: "center" },
-  incomeBadge: {
-    backgroundColor: "#FF9500",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 12,
+  welcomeText: { color: "#888", fontSize: 13 },
+  headerTitle: {
+    color: "#FFF",
+    fontSize: 22,
+    fontWeight: "bold",
+    marginTop: 2,
   },
-  incomeText: { fontWeight: "bold", fontSize: 14 },
-  avatarMini: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#333",
-  },
+  avatarCircle: { padding: 2 },
 
   statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 25,
+    marginBottom: 30,
   },
   statCard: {
     width: "31%",
-    backgroundColor: "#2C2C2E",
-    padding: 15,
-    borderRadius: 16,
+    backgroundColor: "#1C1C1E",
+    padding: 16,
+    borderRadius: 20,
     position: "relative",
+    borderWidth: 1,
+    borderColor: "#2C2C2E",
   },
   statBadge: {
     position: "absolute",
-    top: -5,
-    right: -5,
-    backgroundColor: "#FF9500",
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    top: -6,
+    right: -6,
+    backgroundColor: "#FF3B30",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1,
   },
-  badgeText: {
-    color: "#121212", // Màu chữ tối trên nền cam
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  statValue: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
+  badgeText: { color: "#FFF", fontSize: 10, fontWeight: "bold" },
+  statValue: { color: "#FFF", fontSize: 22, fontWeight: "bold" },
   statTitle: { color: "#888", fontSize: 11, marginTop: 4 },
-  statSub: { fontSize: 11, fontWeight: "bold", marginTop: 4 },
+  statSub: { fontSize: 10, fontWeight: "bold", marginTop: 6 },
 
-  sectionTitle: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 15,
-    marginTop: 10,
   },
+  sectionTitle: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
+  seeAllText: { color: "#FF9500", fontSize: 13 },
+
   nextSessionCard: {
-    backgroundColor: "#2C2C2E",
+    backgroundColor: "#1C1C1E",
     padding: 20,
-    borderRadius: 24,
+    borderRadius: 28,
     marginBottom: 25,
+    borderWidth: 1,
+    borderColor: "#333",
   },
   userRow: { flexDirection: "row", alignItems: "center" },
   userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#555",
-  },
-  userName: { color: "#FFF", fontSize: 16, fontWeight: "bold" },
-  programName: { color: "#888", fontSize: 13, marginTop: 2 },
-  premiumLabel: {
-    backgroundColor: "#FF9500",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  premiumText: { fontSize: 11, fontWeight: "bold" },
-  timeRow: { flexDirection: "row", alignItems: "center", marginTop: 15 },
-  timeText: { color: "#CCC", marginLeft: 8, fontSize: 14 },
-  actionRow: { flexDirection: "row", marginTop: 20, gap: 10 },
-  btnSecondary: {
-    flex: 1,
-    flexDirection: "row",
-    backgroundColor: "#3A3A3C",
-    padding: 12,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#2C2C2E",
     justifyContent: "center",
     alignItems: "center",
+  },
+  userName: { color: "#FFF", fontSize: 17, fontWeight: "bold" },
+  programName: { color: "#888", fontSize: 13, marginTop: 2 },
+  statusLabel: {
+    backgroundColor: "#FF950020",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  statusLabelText: { color: "#FF9500", fontSize: 11, fontWeight: "bold" },
+  timeInfoRow: { flexDirection: "row", marginTop: 15, gap: 12 },
+  timeTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2C2C2E",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
     gap: 6,
   },
-  btnPrimary: {
-    flex: 1.5,
-    backgroundColor: "#FF9500",
-    padding: 12,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  btnText: { color: "#FFF", fontWeight: "bold", fontSize: 14 },
-  btnTextBlack: { color: "#000", fontWeight: "bold", fontSize: 14 },
+  timeTagText: { color: "#FFF", fontSize: 13, fontWeight: "500" },
 
-  requestCard: {
-    backgroundColor: "#2C2C2E",
-    padding: 16,
-    borderRadius: 20,
-    marginBottom: 15,
-  },
-  newLabel: {
-    backgroundColor: "#FF9500",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  newText: { fontSize: 10, fontWeight: "bold" },
-  priceRequest: { color: "#CCC", marginTop: 12, fontSize: 14 },
-  requestActionRow: { flexDirection: "row", gap: 12, marginTop: 15 },
-  acceptBtn: {
-    flex: 1,
-    backgroundColor: "#FF9500",
-    padding: 12,
-    borderRadius: 10,
+  emptyCard: {
+    padding: 40,
+    backgroundColor: "#1C1C1E",
+    borderRadius: 24,
     alignItems: "center",
-  },
-  declineBtn: {
-    flex: 1,
-    backgroundColor: "#3A3A3C",
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
+    marginBottom: 25,
+    borderStyle: "dashed",
     borderWidth: 1,
-    borderColor: "#444",
+    borderColor: "#333",
+  },
+  emptyText: {
+    color: "#666",
+    marginTop: 12,
+    fontSize: 14,
+    textAlign: "center",
   },
 
-  quickActionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 30,
-  },
+  quickActionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   actionBtn: {
     width: "48%",
-    backgroundColor: "#2C2C2E",
-    padding: 15,
-    borderRadius: 12,
+    backgroundColor: "#1C1C1E",
+    padding: 16,
+    borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "#2C2C2E",
+  },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#FF950015",
+    justifyContent: "center",
+    alignItems: "center",
   },
   actionBtnText: { color: "#FFF", fontWeight: "600", fontSize: 13 },
 });
